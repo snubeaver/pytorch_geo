@@ -1,0 +1,15 @@
+__pycache__/
+data/
+build/
+dist/
+alpha/
+runs/
+.cache/
+.eggs/
+*.egg-info/
+.coverage
+.coverage.*
+.vscode
+
+!torch_geometric/data/
+!test/data/
