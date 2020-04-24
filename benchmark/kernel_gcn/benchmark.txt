@@ -1,0 +1,148 @@
+Script started on 2020-04-22 17:33:33+0900
+(base) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ conda activaet [K[K[Kte gnn
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ conda activate gnnexit[K[2Plscd file/ls[Kcd fc6394f2cd2aed1ac451b3d4b794a8ffa/[A(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ [C[C[C../..[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cls[Kcd file/ls[Kcd a8e8eb1445bb8b600d1f8fe1984ca8449/[A(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ ls[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Ccd Code/Backups/[4P~/.configCode/Backups/ls[Kcd a8e8eb1445bb8b600d1f8fe1984ca8449/[A(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ ls[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Ccd file/ls[Kcd ../..fc6394f2cd2aed1ac451b3d4b794a8ffa/[A(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ ls[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Ccd file/ls[Kexitconda activate gnn[KCUDA_VISIBLE_DEVICES=1 python mainn.py
+-----
+ENZYMES - SAGPool
+Val Loss: 1.7306, Test Accuracy: 0.242 ± 0.063, Duration: 6.023
+Val Loss: 1.6959, Test Accuracy: 0.268 ± 0.043, Duration: 5.985
+Val Loss: 1.6765, Test Accuracy: 0.255 ± 0.059, Duration: 5.954
+Val Loss: 1.6636, Test Accuracy: 0.305 ± 0.053, Duration: 6.009
+Val Loss: 1.7046, Test Accuracy: 0.257 ± 0.054, Duration: 6.699
+Val Loss: 1.6920, Test Accuracy: 0.267 ± 0.066, Duration: 6.651
+Val Loss: 1.6590, Test Accuracy: 0.305 ± 0.072, Duration: 6.690
+Val Loss: 1.6221, Test Accuracy: 0.323 ± 0.077, Duration: 6.813
+Val Loss: 1.7070, Test Accuracy: 0.257 ± 0.061, Duration: 10.799
+Val Loss: 1.6675, Test Accuracy: 0.287 ± 0.051, Duration: 10.827
+Val Loss: 1.6372, Test Accuracy: 0.307 ± 0.061, Duration: 10.846
+Val Loss: 1.6248, Test Accuracy: 0.332 ± 0.080, Duration: 11.050
+Val Loss: 1.6987, Test Accuracy: 0.302 ± 0.071, Duration: 11.504
+Val Loss: 1.6490, Test Accuracy: 0.300 ± 0.058, Duration: 11.470
+Val Loss: 1.6207, Test Accuracy: 0.298 ± 0.071, Duration: 11.488
+Val Loss: 1.5795, Test Accuracy: 0.343 ± 0.111, Duration: 11.698
+Val Loss: 1.6656, Test Accuracy: 0.275 ± 0.069, Duration: 15.529
+Val Loss: 1.6239, Test Accuracy: 0.297 ± 0.077, Duration: 15.666
+Val Loss: 1.6214, Test Accuracy: 0.282 ± 0.073, Duration: 15.711
+Val Loss: 1.6229, Test Accuracy: 0.332 ± 0.083, Duration: 15.793
+Best result - 0.343 ± 0.111
+-----
+ENZYMES - DiffPool
+Val Loss: 1.7177, Test Accuracy: 0.282 ± 0.045, Duration: 33.996
+Val Loss: 1.6909, Test Accuracy: 0.292 ± 0.059, Duration: 34.211
+Val Loss: 1.6696, Test Accuracy: 0.323 ± 0.054, Duration: 33.765
+Val Loss: 1.6328, Test Accuracy: 0.335 ± 0.064, Duration: 34.520
+Val Loss: 1.7326, Test Accuracy: 0.250 ± 0.039, Duration: 34.092
+Val Loss: 1.6983, Test Accuracy: 0.277 ± 0.055, Duration: 34.220
+Val Loss: 1.6658, Test Accuracy: 0.317 ± 0.061, Duration: 33.532
+Val Loss: 1.6307, Test Accuracy: 0.335 ± 0.059, Duration: 34.244
+Val Loss: 1.7452, Test Accuracy: 0.265 ± 0.051, Duration: 33.852
+Val Loss: 1.6906, Test Accuracy: 0.272 ± 0.052, Duration: 34.291
+Val Loss: 1.6612, Test Accuracy: 0.293 ± 0.059, Duration: 34.849
+Val Loss: 1.6288, Test Accuracy: 0.328 ± 0.053, Duration: 33.548
+Val Loss: 1.6449, Test Accuracy: 0.330 ± 0.044, Duration: 35.554
+Val Loss: 1.6177, Test Accuracy: 0.347 ± 0.059, Duration: 35.332
+Val Loss: 1.5601, Test Accuracy: 0.350 ± 0.061, Duration: 35.084
+Val Loss: 1.5570, Test Accuracy: 0.398 ± 0.064, Duration: 35.379
+Val Loss: 1.6516, Test Accuracy: 0.333 ± 0.068, Duration: 34.202
+Val Loss: 1.5914, Test Accuracy: 0.367 ± 0.067, Duration: 34.982
+Val Loss: 1.5606, Test Accuracy: 0.367 ± 0.072, Duration: 35.188
+Val Loss: 1.5592, Test Accuracy: 0.380 ± 0.053, Duration: 35.720
+Best result - 0.398 ± 0.064
+-----
+ENZYMES - MincutPool
+Val Loss: 1.7291, Test Accuracy: 0.247 ± 0.063, Duration: 35.263
+Val Loss: 1.6887, Test Accuracy: 0.292 ± 0.042, Duration: 35.506
+Val Loss: 1.6557, Test Accuracy: 0.323 ± 0.068, Duration: 34.933
+Val Loss: 1.6360, Test Accuracy: 0.348 ± 0.074, Duration: 34.729
+Val Loss: 1.7287, Test Accuracy: 0.238 ± 0.034, Duration: 34.351
+Val Loss: 1.6998, Test Accuracy: 0.300 ± 0.054, Duration: 34.654
+Val Loss: 1.6601, Test Accuracy: 0.310 ± 0.072, Duration: 34.753
+Val Loss: 1.6352, Test Accuracy: 0.350 ± 0.055, Duration: 35.327
+Val Loss: 1.7217, Test Accuracy: 0.275 ± 0.072, Duration: 34.321
+Val Loss: 1.6969, Test Accuracy: 0.287 ± 0.062, Duration: 34.502
+Val Loss: 1.6566, Test Accuracy: 0.320 ± 0.063, Duration: 34.606
+Val Loss: 1.6327, Test Accuracy: 0.332 ± 0.077, Duration: 34.351
+Val Loss: 1.6275, Test Accuracy: 0.325 ± 0.055, Duration: 35.496
+Val Loss: 1.6072, Test Accuracy: 0.335 ± 0.068, Duration: 35.449
+Val Loss: 1.5484, Test Accuracy: 0.350 ± 0.066, Duration: 36.642
+Val Loss: 1.5325, Test Accuracy: 0.375 ± 0.100, Duration: 36.572
+Val Loss: 1.6512, Test Accuracy: 0.290 ± 0.044, Duration: 35.536
+Val Loss: 1.6074, Test Accuracy: 0.328 ± 0.053, Duration: 35.460
+Val Loss: 1.5754, Test Accuracy: 0.363 ± 0.067, Duration: 36.711
+Val Loss: 1.5466, Test Accuracy: 0.377 ± 0.073, Duration: 35.461
+Best result - 0.375 ± 0.100
+-----
+ENZYMES - TopK
+Val Loss: 1.7185, Test Accuracy: 0.242 ± 0.037, Duration: 6.022
+Val Loss: 1.7049, Test Accuracy: 0.243 ± 0.057, Duration: 5.980
+Val Loss: 1.6898, Test Accuracy: 0.275 ± 0.040, Duration: 6.046
+Val Loss: 1.6650, Test Accuracy: 0.290 ± 0.064, Duration: 6.066
+Traceback (most recent call last):
+  File "main.py", line 87, in <module>
+    diff=diff,
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/train_eval.py", line 47, in cross_validation_with_val_set
+    train_loss = train(model, optimizer, train_loader)
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/train_eval.py", line 118, in train
+    out = model(data)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/top_k.py", line 38, in forward
+    x = F.relu(conv(x, edge_index))
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch_geometric/nn/conv/gcn_conv.py", line 87, in forward
+    x = torch.matmul(x, self.weight)
+RuntimeError: size mismatch, m1: [4128 x 16], m2: [3 x 16] at /opt/conda/conda-bld/pytorch_1579027003190/work/aten/src/THC/generic/THCTensorMathBlas.cu:290
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ CUDA_VISIBLE_DEVICES=1 python mainn.py
+-----
+DD - SAGPool
+Val Loss: 0.5884, Test Accuracy: 0.713 ± 0.050, Duration: 33.849
+Val Loss: 0.5650, Test Accuracy: 0.716 ± 0.050, Duration: 34.104
+Val Loss: 0.5610, Test Accuracy: 0.728 ± 0.041, Duration: 35.334
+Val Loss: 0.5584, Test Accuracy: 0.726 ± 0.033, Duration: 37.474
+Val Loss: 0.5720, Test Accuracy: 0.718 ± 0.042, Duration: 36.009
+Val Loss: 0.5601, Test Accuracy: 0.725 ± 0.047, Duration: 36.654
+Val Loss: 0.5562, Test Accuracy: 0.722 ± 0.034, Duration: 39.134
+Val Loss: 0.5606, Test Accuracy: 0.727 ± 0.038, Duration: 43.361
+Val Loss: 0.5632, Test Accuracy: 0.738 ± 0.030, Duration: 51.135
+Val Loss: 0.5605, Test Accuracy: 0.715 ± 0.044, Duration: 52.284
+Val Loss: 0.5499, Test Accuracy: 0.727 ± 0.046, Duration: 55.183
+Val Loss: 0.5632, Test Accuracy: 0.728 ± 0.044, Duration: 61.084
+Val Loss: 0.5652, Test Accuracy: 0.728 ± 0.040, Duration: 53.558
+Val Loss: 0.5683, Test Accuracy: 0.720 ± 0.041, Duration: 55.043
+Val Loss: 0.5522, Test Accuracy: 0.723 ± 0.035, Duration: 57.607
+Val Loss: 0.5543, Test Accuracy: 0.719 ± 0.035, Duration: 63.508
+Val Loss: 0.5547, Test Accuracy: 0.713 ± 0.040, Duration: 66.072
+Val Loss: 0.5594, Test Accuracy: 0.718 ± 0.042, Duration: 67.344
+Val Loss: 0.5359, Test Accuracy: 0.716 ± 0.024, Duration: 72.049
+Val Loss: 0.5472, Test Accuracy: 0.727 ± 0.037, Duration: 78.353
+Best result - 0.716 ± 0.024
+-----
+DD - DiffPool
+Traceback (most recent call last):
+  File "main.py", line 87, in <module>
+    diff=diff,
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/train_eval.py", line 43, in cross_validation_with_val_set
+    train_loss = train_diff(model, optimizer, train_loader)
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/train_eval.py", line 132, in train_diff
+    out, extra_loss = model(data)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/diff_pool.py", line 65, in forward
+    s = self.pool_block1(x, adj, mask, add_loop=True)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/snubeaver/Research/pytorch_geometric/benchmark/kernel_gcn/diff_pool.py", line 24, in forward
+    x1 = self.conv1(x, adj, mask, add_loop)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in __call__
+    result = self.forward(*input, **kwargs)
+  File "/home/snubeaver/anaconda3/envs/gnn/lib/python3.6/site-packages/torch_geometric/nn/dense/dense_gcn_conv.py", line 53, in forward
+    adj = adj.clone()
+RuntimeError: CUDA out of memory. Tried to allocate 15.76 GiB (GPU 0; 23.65 GiB total capacity; 16.00 GiB already allocated; 1.87 GiB free; 16.00 GiB reserved in total by PyTorch)
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ exit
+exit
+
+Script done on 2020-04-23 10:41:22+0900

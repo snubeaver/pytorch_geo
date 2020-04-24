@@ -1,0 +1,80 @@
+Script started on 2020-04-24 14:48:31+0900
+(base) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel__gcn[00m$ p[Kconda activate gg[Knn
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_ggcn[00m$ conda activate gnn[C[C[C[C[Cexit[K[2Plscd ../kernel[C[C[C[C[C[Cp main.py ../kernel/extra.py[C[C[C[C[Cls[Kcd kernel_gcn/[C[C[C[C[Cls[Kcp main.py ../kernel/extra.py[C[C[C[C[C[C[17Pd ../kernel[C[C[C[C[Cls[Kexitconda activate gnn[C[C[C[C[C[Kpython main.py 
+-----
+ENZYMES - EdgePool
+Val Loss: 1.7255, Test Accuracy: 0.253 ± 0.041, Duration: 6.213
+Val Loss: 1.7089, Test Accuracy: 0.248 ± 0.057, Duration: 6.155
+Val Loss: 1.6837, Test Accuracy: 0.278 ± 0.050, Duration: 6.193
+Val Loss: 1.6762, Test Accuracy: 0.295 ± 0.064, Duration: 6.200
+Val Loss: 1.7091, Test Accuracy: 0.253 ± 0.061, Duration: 6.849
+Val Loss: 1.6701, Test Accuracy: 0.285 ± 0.079, Duration: 6.897
+Val Loss: 1.6567, Test Accuracy: 0.297 ± 0.084, Duration: 6.926
+Val Loss: 1.6192, Test Accuracy: 0.330 ± 0.079, Duration: 6.985
+Best result - 0.330 ± 0.079
+-----
+DD - EdgePool
+Val Loss: 0.5797, Test Accuracy: 0.719 ± 0.033, Duration: 31.972
+Val Loss: 0.5657, Test Accuracy: 0.722 ± 0.037, Duration: 33.034
+Val Loss: 0.5605, Test Accuracy: 0.728 ± 0.040, Duration: 33.661
+Val Loss: 0.5595, Test Accuracy: 0.723 ± 0.029, Duration: 36.153
+Val Loss: 0.5766, Test Accuracy: 0.723 ± 0.023, Duration: 34.075
+Val Loss: 0.5699, Test Accuracy: 0.736 ± 0.039, Duration: 35.603
+Val Loss: 0.5519, Test Accuracy: 0.728 ± 0.048, Duration: 38.146
+Val Loss: 0.5599, Test Accuracy: 0.710 ± 0.029, Duration: 40.822
+Best result - 0.728 ± 0.048
+-----
+IMDB-BINARY - EdgePool
+Val Loss: 0.4877, Test Accuracy: 0.716 ± 0.052, Duration: 14.631
+Val Loss: 0.4747, Test Accuracy: 0.731 ± 0.038, Duration: 14.574
+Val Loss: 0.4731, Test Accuracy: 0.737 ± 0.033, Duration: 14.580
+Val Loss: 0.4747, Test Accuracy: 0.713 ± 0.044, Duration: 14.672
+Val Loss: 0.4826, Test Accuracy: 0.722 ± 0.048, Duration: 15.577
+Val Loss: 0.4774, Test Accuracy: 0.729 ± 0.052, Duration: 15.681
+Val Loss: 0.4697, Test Accuracy: 0.726 ± 0.043, Duration: 15.666
+Val Loss: 0.4663, Test Accuracy: 0.739 ± 0.050, Duration: 15.830
+Best result - 0.739 ± 0.050
+-----
+PROTEINS - EdgePool
+Val Loss: 0.5837, Test Accuracy: 0.715 ± 0.040, Duration: 11.248
+Val Loss: 0.5752, Test Accuracy: 0.720 ± 0.028, Duration: 11.197
+Val Loss: 0.5616, Test Accuracy: 0.714 ± 0.041, Duration: 11.198
+Val Loss: 0.5556, Test Accuracy: 0.714 ± 0.046, Duration: 11.264
+Val Loss: 0.5810, Test Accuracy: 0.714 ± 0.035, Duration: 12.315
+Val Loss: 0.5649, Test Accuracy: 0.718 ± 0.038, Duration: 12.353
+Val Loss: 0.5557, Test Accuracy: 0.713 ± 0.045, Duration: 12.309
+Val Loss: 0.5488, Test Accuracy: 0.720 ± 0.044, Duration: 12.557
+Best result - 0.720 ± 0.044
+-----
+REDDIT-BINARY - EdgePool
+Val Loss: 0.4611, Test Accuracy: 0.758 ± 0.040, Duration: 30.897
+Val Loss: 0.4100, Test Accuracy: 0.820 ± 0.045, Duration: 31.567
+Val Loss: 0.3416, Test Accuracy: 0.855 ± 0.031, Duration: 32.871
+Val Loss: 0.3182, Test Accuracy: 0.860 ± 0.032, Duration: 35.030
+Val Loss: 0.4135, Test Accuracy: 0.801 ± 0.069, Duration: 33.504
+Val Loss: 0.3441, Test Accuracy: 0.840 ± 0.034, Duration: 34.778
+Val Loss: 0.3265, Test Accuracy: 0.850 ± 0.046, Duration: 37.711
+Val Loss: 0.3253, Test Accuracy: 0.861 ± 0.028, Duration: 43.107
+Best result - 0.860 ± 0.032
+-----
+MUTAG - EdgePool
+Val Loss: 0.5393, Test Accuracy: 0.708 ± 0.098, Duration: 2.291
+Val Loss: 0.5229, Test Accuracy: 0.735 ± 0.107, Duration: 2.328
+Val Loss: 0.5131, Test Accuracy: 0.723 ± 0.089, Duration: 2.300
+Val Loss: 0.5034, Test Accuracy: 0.718 ± 0.089, Duration: 2.298
+Val Loss: 0.5261, Test Accuracy: 0.745 ± 0.096, Duration: 2.706
+Val Loss: 0.5033, Test Accuracy: 0.713 ± 0.095, Duration: 2.741
+Val Loss: 0.5003, Test Accuracy: 0.723 ± 0.079, Duration: 2.739
+Val Loss: 0.4888, Test Accuracy: 0.739 ± 0.081, Duration: 2.712
+Best result - 0.739 ± 0.081
+-----
+ENZYMES - EdgePool: 0.330 ± 0.079
+DD - EdgePool: 0.728 ± 0.048
+IMDB-BINARY - EdgePool: 0.739 ± 0.050
+PROTEINS - EdgePool: 0.720 ± 0.044
+REDDIT-BINARY - EdgePool: 0.860 ± 0.032
+MUTAG - EdgePool: 0.739 ± 0.081
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ exx[Kit
+exit
+
+Script done on 2020-04-24 17:16:30+0900
