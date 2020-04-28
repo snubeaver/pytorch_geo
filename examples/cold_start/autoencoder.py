@@ -8,7 +8,7 @@ import torch_geometric.transforms as T
 from torch_geometric.nn import GCNConv
 from autoencoder_nn import  GAE, VGAE
 from train_test_split_edges import train_test_split_edges
-
+import pdb
 torch.manual_seed(12345)
 
 parser = argparse.ArgumentParser()
@@ -37,6 +37,10 @@ class Encoder(torch.nn.Module):
                 2 * out_channels, out_channels, cached=True)
 
     def forward(self, x, edge_index):
+        row, col = x.size()
+        mask = torch.zeros(col)
+        pdb.set_trace()
+        # x[row-1] = mask
         x = F.relu(self.conv1(x, edge_index))
         if args.model in ['GAE']:
             return self.conv2(x, edge_index)

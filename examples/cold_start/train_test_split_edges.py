@@ -35,7 +35,7 @@ def train_test_split_edges(data, val_ratio=0.05, test_ratio=0.1):
 
 
 
-    # Positive edges.
+    # Positive edges on last node
     perm = torch.randperm(row.size(0))
     row_u, col_u = row[row==(num_nodes-1)], col[row==(num_nodes-1)]
     row_l, col_l = row[row==(num_nodes-1)], col[row==(num_nodes-1)]
@@ -55,25 +55,28 @@ def train_test_split_edges(data, val_ratio=0.05, test_ratio=0.1):
     data.train_pos_edge_index = to_undirected(data.train_pos_edge_index)
 
     # Negative edges.
+    # Maybe we not need this neg edge for this
     
     neg_adj_mask = torch.ones(num_nodes, num_nodes, dtype=torch.uint8)
     neg_adj_mask = neg_adj_mask.triu(diagonal=1).to(torch.bool)
-    neg_adj_mask[row, col] = 0
+    neg_adj_mask[row, col] = 0 #if there is connection 0
 
+    # 3 random edges
+    extra_edge=3
     neg_row, neg_col = neg_adj_mask.nonzero().t()
     perm = random.sample(range(neg_row.size(0)),
-                         min(n_v + n_t, neg_row.size(0)))
+                         extra_edge)
     perm = torch.tensor(perm)
     perm = perm.to(torch.long)
-    neg_row, neg_col = neg_row[perm], neg_col[perm]
+    neg_row, neg_col = neg_row[num_nodes-1], neg_col[perm]
 
     neg_adj_mask[neg_row, neg_col] = 0
     data.train_neg_adj_mask = neg_adj_mask
 
-    row, col = neg_row[:n_v], neg_col[:n_v]
+    row, col = neg_row[extra_edge], neg_col[extra_edge]
     data.val_neg_edge_index = torch.stack([row, col], dim=0)
 
-    row, col = neg_row[n_v:n_v + n_t], neg_col[n_v:n_v + n_t]
+    row, col = neg_row[extra_edge], neg_col[extra_edge]
     data.test_neg_edge_index = torch.stack([row, col], dim=0)
 
     return data
