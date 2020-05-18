@@ -40,7 +40,7 @@ def random_planetoid_splits(data, num_classes):
     return data
 
 
-def run(dataset, data, model, runs, epochs, lr, weight_decay, early_stopping,
+def run_(dataset, data, model, runs, epochs, lr, weight_decay, early_stopping,
         permute_masks=None, logger=None):
 
     val_losses, accs, durations = [], [], []
@@ -50,6 +50,10 @@ def run(dataset, data, model, runs, epochs, lr, weight_decay, early_stopping,
         data = data.to(device)
 
         model.to(device).reset_parameters()
+        # optimizer = torch.optim.Adam([
+        #     dict(params=model.reg_params, weight_decay=5e-4),
+        #     dict(params=model.non_reg_params, weight_decay=0)
+        # ], lr=0.01)
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
         if torch.cuda.is_available():
@@ -74,10 +78,10 @@ def run(dataset, data, model, runs, epochs, lr, weight_decay, early_stopping,
                 test_acc = eval_info['test_acc']
 
             val_loss_history.append(eval_info['val_loss'])
-            if early_stopping > 0 and epoch > epochs // 2:
-                tmp = tensor(val_loss_history[-(early_stopping + 1):-1])
-                if eval_info['val_loss'] > tmp.mean().item():
-                    break
+            # if early_stopping > 0 and epoch > epochs // 2:
+            #     tmp = tensor(val_loss_history[-(early_stopping + 1):-1])
+            #     if eval_info['val_loss'] > tmp.mean().item():
+            #         break
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()

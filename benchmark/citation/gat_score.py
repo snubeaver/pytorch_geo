@@ -1,34 +1,14 @@
 import torch
+import torch.nn.functional as F
 from torch_scatter import scatter_add
 from torch_geometric.utils import softmax
 
-from torch_geometric.nn import reset
+import pdb
+from inits import reset
 
 
 class GATScore(torch.nn.Module):
-    r"""Global soft attention layer from the `"Gated Graph Sequence Neural
-    Networks" <https://arxiv.org/abs/1511.05493>`_ paper
 
-    .. math::
-        \mathbf{r}_i = \sum_{n=1}^{N_i} \mathrm{softmax} \left(
-        h_{\mathrm{gate}} ( \mathbf{x}_n ) \right) \odot
-        h_{\mathbf{\Theta}} ( \mathbf{x}_n ),
-
-    where :math:`h_{\mathrm{gate}} \colon \mathbb{R}^F \to
-    \mathbb{R}` and :math:`h_{\mathbf{\Theta}}` denote neural networks, *i.e.*
-    MLPS.
-
-    Args:
-        gate_nn (torch.nn.Module): A neural network :math:`h_{\mathrm{gate}}`
-            that computes attention scores by mapping node features :obj:`x` of
-            shape :obj:`[-1, in_channels]` to shape :obj:`[-1, 1]`, *e.g.*,
-            defined by :class:`torch.nn.Sequential`.
-        nn (torch.nn.Module, optional): A neural network
-            :math:`h_{\mathbf{\Theta}}` that maps node features :obj:`x` of
-            shape :obj:`[-1, in_channels]` to shape :obj:`[-1, out_channels]`
-            before combining them with the attention scores, *e.g.*, defined by
-            :class:`torch.nn.Sequential`. (default: :obj:`None`)
-    """
     def __init__(self, gate_nn, nn=None):
         super(GATScore, self).__init__()
         self.gate_nn = gate_nn
@@ -40,19 +20,36 @@ class GATScore(torch.nn.Module):
         reset(self.gate_nn)
         reset(self.nn)
 
-    def forward(self, x, batch, size=None):
+    def forward(self, x, masked_node, size=None):
         """"""
         x = x.unsqueeze(-1) if x.dim() == 1 else x
-        size = batch[-1].item() + 1 if size is None else size
+        size = x.size(0)
+        feature_num = x.size(-1)
+        masked_node = masked_node.unsqueeze(1)
+        tiled_mask = masked_node.repeat(1,size,1)
+        tiled_x = x.repeat(masked_node.size(0),1,1)
 
-        gate = self.gate_nn(x).view(-1, 1)
-        x = self.nn(x) if self.nn is not None else x
-        assert gate.dim() == x.dim() and gate.size(0) == x.size(0)
 
-        gate = softmax(gate, batch, size)
-        # out = scatter_add(gate * x, batch, dim=0, dim_size=size)
+        tiled_mask = tiled_mask.view(-1, feature_num)
+        tiled_x = tiled_x.view(-1, feature_num)
+        # x = torch.cat((x,tiled_mask), 1)
+        # gate = self.gate_nn(x).view(-1, 1)
 
-        return gate
+        # gate = self.gate_nn(x)
+        # query = self.gate_nn(masked_node)
+        # x = self.nn(x) if self.nn is not None else x
+        # assert gate.dim() == x.dim() and gate.size(0) == x.size(0)
+
+        # gate = softmax(gate, batch, size)
+
+        pdist = torch.nn.PairwiseDistance(p=2)
+        output = pdist(tiled_mask, tiled_x)
+
+        output = output.view(-1, size)
+        # output = F.softmax(output, 1)
+
+        # gate = softmax(gate)
+        return output.to(x.device)
 
     def __repr__(self):
         return '{}(gate_nn={}, nn={})'.format(self.__class__.__name__,

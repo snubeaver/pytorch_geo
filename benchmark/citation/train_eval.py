@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch import tensor
 from torch.optim import Adam
-
+import pdb
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -51,6 +51,10 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         data = data.to(device)
 
         model.to(device).reset_parameters()
+        # optimizer = torch.optim.Adam([
+        #     dict(params=model.reg_params, weight_decay=5e-4),
+        #     dict(params=model.non_reg_params, weight_decay=0)
+        # ], lr=0.01)
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
         if torch.cuda.is_available():
@@ -63,6 +67,7 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         val_loss_history = []
 
         for epoch in range(1, epochs + 1):
+            pdb.set_trace()
             train(model, optimizer, data)
             eval_info = evaluate(model, data)
             eval_info['epoch'] = epoch
