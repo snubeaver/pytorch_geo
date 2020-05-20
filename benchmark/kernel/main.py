@@ -28,10 +28,10 @@ args = parser.parse_args()
 layers = [2, 3]
 # layers = [4]
 hiddens = [32, 64]
-lambda_ = [0.05, 0.1, 0.5]
+lambdas_ = [0.05, 0.1, 0.5]
 # hiddens = [16]
-datasets = ['IMDB-BINARY', 'PROTEINS', 'REDDIT-BINARY','MUTAG']  # , 'COLLAB']
-# datasets = ['MUTAG']  # , 'COLLAB']
+#datasets = ['REDDIT-BINARY', 'PROTEINS', 'IMDB-BINARY', 'MUTAG']  # , 'COLLAB']
+datasets = [ 'COLLAB']
 nets = [
     # GCNWithJK,
     # DiffPool,
@@ -67,25 +67,26 @@ for dataset_name, Net in product(datasets, nets):
     diff = False
     if(Net == DiffPool or Net == SSGPool): diff=True
     print('-----\n{} - {}'.format(dataset_name, Net.__name__))
-    for num_layers, hidden, lambda_ in product(layers, hiddens, lambda_):
-        dataset = get_dataset(dataset_name, sparse = not diff)
-        # dataset = get_dataset(dataset_name, sparse = True)
-        model = Net(dataset, num_layers, hidden, lambda_)
-        loss, acc, std = cross_validation_with_val_set(
-            dataset,
-            model,
-            folds=10,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            lr_decay_factor=args.lr_decay_factor,
-            lr_decay_step_size=args.lr_decay_step_size,
-            weight_decay=0,
-            logger=None,
-            diff=diff,
-        )
-        if loss < best_result[0]:
-            best_result = (loss, acc, std)
+    for num_layers, hidden in product(layers, hiddens):
+        for lambda_ in lambdas_:
+            dataset = get_dataset(dataset_name, sparse = not diff)
+            # dataset = get_dataset(dataset_name, sparse = True)
+            model = Net(dataset, num_layers, hidden, lambda_)
+            loss, acc, std = cross_validation_with_val_set(
+                dataset,
+                model,
+                folds=10,
+                epochs=args.epochs,
+                batch_size=args.batch_size,
+                lr=args.lr,
+                lr_decay_factor=args.lr_decay_factor,
+                lr_decay_step_size=args.lr_decay_step_size,
+                weight_decay=0,
+                logger=None,
+                diff=diff,
+            )
+            if loss < best_result[0]:
+                best_result = (loss, acc, std)
 
     desc = '{:.3f} ± {:.3f}'.format(best_result[1], best_result[2])
     print('Best result - {}'.format(desc))

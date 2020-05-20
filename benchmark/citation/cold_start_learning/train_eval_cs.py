@@ -7,12 +7,14 @@ import torch.nn.functional as F
 from torch_geometric.utils import to_dense_adj
 from torch import tensor
 from torch.optim import Adam
-from train_test_split_edges import train_test_split_edges
+from train_edges import train_edges
+from test_edges import test_edges
 from negative_sampling import negative_sampling
 from torch_geometric.utils import (remove_self_loops, add_self_loops)
 
 from sklearn.metrics import roc_auc_score
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 
 def index_to_mask(index, size):
@@ -61,14 +63,17 @@ def random_planetoid_splits(data, epochs, num_classes):
 def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         permute_masks=None, logger=None):
 
-    val_losses, accs, durations = [], [], []
-    for _ in range(runs):
+    batch_size = 30
+    train_losses, accs, durations = [], [], []
+
+    for k in range(runs):
         # data = dataset[0]
         # # pdb.set_trace()
         # # if permute_masks is not None:
         # #     data = permute_masks(data, runs, dataset.num_classes)
         # data = data.to(device)
-
+        
+        
         model.to(device).reset_parameters()
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         best_val_perf = test_perf = 0
@@ -79,63 +84,53 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
 
         # t_start = time.perf_counter()
 
-        # best_val_loss = float('inf')
-        # test_acc = 0
-        # val_loss_history = []
-        # cold_accs=[]
+        
         
         data = dataset[0]
         data = data.to(device)
-        data = train_test_split_edges(data)
-        
-        for epoch in range(1, epochs + 1):
+        num_nodes = data.num_nodes
+        pivot= int(num_nodes*0.1)
+        cold_mask_node = range(k*pivot, (k+1)*pivot)
+        train_node = range(num_nodes)
+        train_node = [e for e in train_node if e not in cold_mask_node]
+        data = test_edges(data, cold_mask_node)
+        epoch_num = int((num_nodes-pivot)/batch_size)
+        print("{}-fold Result".format(k))
+        for epoch in range(0, epoch_num):
             # mask = torch.ones(data.x.size(), dtype=data.x.dtype, device=data.x.device)
             # mask[data.cold_mask_node] = torch.zeros(data.x.size(1), dtype=data.x.dtype, device=data.x.device )
-            
+            # best_val_loss = float('inf')
+            # test_acc = 0
+            # val_loss_history = []
+            # cold_accs=[]
             # data.masked_node = data.x[data.cold_mask_node]
             # data.x = torch.mul(data.x, mask)
-
-            train_loss=train(model, optimizer, data)
-            val_perf, tmp_test_perf = evaluate(model, data)
-            if val_perf > best_val_perf:
-                best_val_perf = val_perf
-                test_perf = tmp_test_perf
-            log = 'Epoch: {:03d}, Loss: {:.4f}, Val: {:.4f}, Test: {:.4f}'
-            print(log.format(epoch, train_loss, best_val_perf, test_perf))
+            data = train_edges(data, train_node[epoch*batch_size:(epoch+1)*batch_size])
+            train_loss =train(model, optimizer, data)
+            test_auc = evaluate(model, data)
+            # log = 'Epoch: {:03d}, Loss: {:.4f}, Test: {:.4f}'
+            # print(log.format(epoch, train_loss, test_auc))
             
-            # eval_info, cold_acc = evaluate(model, data)
-            # cold_accs.append(cold_acc.item())
-            # eval_info['epoch'] = epoch
-            # if logger is not None:
-            #     logger(eval_info)
-
-            # if eval_info['val_loss'] < best_val_loss:
-            #     best_val_loss = eval_info['val_loss']
-            #     test_acc = eval_info['test_acc']
-
-            # val_loss_history.append(eval_info['val_loss'])
-            # if early_stopping > 0 and epoch > epochs // 2:
-            #     tmp = tensor(val_loss_history[-(early_stopping + 1):-1])
-            #     if eval_info['val_loss'] > tmp.mean().item():
-            #         break
-
         if torch.cuda.is_available():
             torch.cuda.synchronize()
-
-
+        test_auc = evaluate(model, data)
+        train_losses.append(train_loss)
+        accs.append(test_auc)
         # val_losses.append(best_val_loss)
         # accs.append(test_acc)
         # durations.append(t_end - t_start)
         # print(cold_accs)
 
-    # loss, acc, duration = tensor(val_losses), tensor(accs), tensor(durations)
+        # loss, acc = tensor(train_losses), tensor(accs)
 
-    # print('Val Loss: {:.4f},  Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-    #       format(loss.mean().item(),
-    #              acc.mean().item(),
-    #              acc.std().item(),
-    #              duration.mean().item()))
-
+        print('Loss: {:.4f},  Test AUC Score: {:.3f}'.
+            format(train_loss, test_auc))
+    loss, acc = tensor(train_losses), tensor(accs)
+    print("Final Result")
+    print('Loss: {:.4f},  Test AUC: {:.3f} ± {:.3f}'.
+        format(loss.mean().item(),
+                acc.mean().item(),
+                acc.std().item()))
 
 def train(model, optimizer, data):
     model.train()
@@ -197,7 +192,7 @@ def evaluate(model, data):
 def evaluate(model, data):
     model.eval()
     perfs = []
-    for prefix in ["val", "test"]:
+    for prefix in ["test"]:
         pos_edge_index, neg_edge_index = [
             index for _, index in data("{}_pos_edge_index".format(prefix),
                                        "{}_neg_edge_index".format(prefix))
@@ -207,8 +202,8 @@ def evaluate(model, data):
         link_labels = get_link_labels(pos_edge_index, neg_edge_index)
         link_probs = link_probs.detach().cpu().numpy()
         link_labels = link_labels.detach().cpu().numpy()
-        perfs.append(roc_auc_score(link_labels, link_probs))
-    return perfs
+        
+    return roc_auc_score(link_labels, link_probs)
 
 def get_link_labels(pos_edge_index, neg_edge_index):
     link_labels = torch.zeros(pos_edge_index.size(1) +

@@ -20,21 +20,21 @@ from mincut import MincutPool
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
 parser.add_argument('--lr_decay_step_size', type=int, default=50)
 args = parser.parse_args()
 
-layers = [1, 2]
+layers = [1, 2,3,4]
 # layers = [4]
 hiddens = [16, 32, 64, 128]
 # lambdas_ = [0.05, 0.1, 0.5]
 # hiddens = [16]
-datasets = ['ENZYMES','DD' ,'IMDB-BINARY', 'PROTEINS', 'REDDIT-BINARY', 'MUTAG']  # , 'COLLAB']
-# datasets = [ ]
+datasets = ['ENZYMES', 'MUTAG','IMDB-BINARY', 'PROTEINS','REDDIT-BINARY' ]  # , 'COLLAB']
+# datasets = [, ]
 nets = [
-    # GCNWithJK,
+    GCNWithJK,
     # DiffPool,
     # MincutPool,
     # SAGPool,
@@ -52,7 +52,7 @@ nets = [
     # GIN,
     # GlobalAttentionNet,
     # Set2SetNet,
-    SortPool,
+    # SortPool,
 ]
 
 

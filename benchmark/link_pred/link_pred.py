@@ -1,5 +1,5 @@
 import os.path as osp
-import pdb
+
 import torch
 import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score
@@ -9,7 +9,7 @@ from torch_geometric.utils import (negative_sampling, remove_self_loops,
 from torch_geometric.datasets import Planetoid
 import torch_geometric.transforms as T
 from torch_geometric.nn import GCNConv, ChebConv  # noqa
-from train_test_split_edges import train_test_split_edges
+from torch_geometric.utils import train_test_split_edges
 
 torch.manual_seed(12345)
 
@@ -37,8 +37,6 @@ class Net(torch.nn.Module):
         total_edge_index = torch.cat([pos_edge_index, neg_edge_index], dim=-1)
         x_j = torch.index_select(x, 0, total_edge_index[0])
         x_i = torch.index_select(x, 0, total_edge_index[1])
-        # pdb.set_trace()
-        # ef, ef -> e = maybe inner product?
         return torch.einsum("ef,ef->e", x_i, x_j)
 
 
@@ -69,7 +67,6 @@ def train():
         num_neg_samples=pos_edge_index.size(1))
 
     link_logits = model(pos_edge_index, neg_edge_index)
-    # link_logits는 innerproduct of two node feature
     link_labels = get_link_labels(pos_edge_index, neg_edge_index)
 
     loss = F.binary_cross_entropy_with_logits(link_logits, link_labels)

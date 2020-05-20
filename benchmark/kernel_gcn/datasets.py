@@ -54,10 +54,9 @@ def get_dataset(name, sparse=True, cleaned=False):
         for i, data in enumerate(dataset):
             if data.num_nodes <= num_nodes:
                 indices.append(i)
+        
         dataset = dataset[torch.tensor(indices)]
-        # dataset.data.y= dataset.data.y[torch.tensor(indices)]
-        # print(len(dataset))
-        # print(len(dataset.data.y))
+
 
         if dataset.transform is None:
             dataset.transform = T.ToDense(num_nodes)

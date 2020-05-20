@@ -1,5 +1,5 @@
 import time
-
+import pdb
 import torch
 import torch.nn.functional as F
 from torch import tensor
@@ -13,64 +13,69 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                                   lr, lr_decay_factor, lr_decay_step_size,
                                   weight_decay, logger=None, diff=False):
-
+    
     val_losses, accs, durations = [], [], []
+    global_iter =10
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, folds))):
-        
-        train_dataset = dataset[train_idx]
-        test_dataset = dataset[test_idx]
-        val_dataset = dataset[val_idx]
+        for i in range(global_iter):
+            train_dataset = dataset[train_idx[i]]
+            test_dataset = dataset[test_idx[i]]
+            val_dataset = dataset[val_idx[i]]
 
-        if 'adj' in train_dataset[0]:
-            train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
-            val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
-            test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
-        else:
-            train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
-            val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
-            test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
+            if 'adj' in train_dataset[0]:
+                train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
+                val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
+                test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
+            else:
+                train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
+                val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
+                test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
 
-        model.to(device).reset_parameters()
-        optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+            model.to(device).reset_parameters()
+            optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
 
-        t_start = time.perf_counter()
+            t_start = time.perf_counter()
 
-        for epoch in range(1, epochs + 1):
-            if(diff):
-                train_loss = train_diff(model, optimizer, train_loader)
-                val_losses.append(eval_loss_diff(model, val_loader))
-                accs.append(eval_acc_diff(model, test_loader))
-            else: 
-                train_loss = train(model, optimizer, train_loader)
-                val_losses.append(eval_loss(model, val_loader))
-                accs.append(eval_acc(model, test_loader))
-            eval_info = {
-                'fold': fold,
-                'epoch': epoch,
-                'train_loss': train_loss,
-                'val_loss': val_losses[-1],
-                'test_acc': accs[-1],
-            }
+            for epoch in range(1, epochs + 1):
+                if(diff):
+                    train_loss = train_diff(model, optimizer, train_loader)
+                    val_losses.append(eval_loss_diff(model, val_loader))
+                    accs.append(eval_acc_diff(model, test_loader))
+                else: 
+                    train_loss = train(model, optimizer, train_loader)
+                    val_losses.append(eval_loss(model, val_loader))
+                    accs.append(eval_acc(model, test_loader))
+                eval_info = {
+                    'fold': fold,
+                    'epoch': epoch,
+                    'train_loss': train_loss,
+                    'val_loss': val_losses[-1],
+                    'test_acc': accs[-1],
+                }
 
-            if logger is not None:
-                logger(eval_info)
+                if logger is not None:
+                    logger(eval_info)
 
-            if epoch % lr_decay_step_size == 0:
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] = lr_decay_factor * param_group['lr']
+                if epoch % lr_decay_step_size == 0:
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = lr_decay_factor * param_group['lr']
 
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
 
-        t_end = time.perf_counter()
-        durations.append(t_end - t_start)
+            t_end = time.perf_counter()
+            durations.append(t_end - t_start)
 
     loss, acc, duration = tensor(val_losses), tensor(accs), tensor(durations)
-    loss, acc = loss.view(folds, epochs), acc.view(folds, epochs)
+    loss, acc = loss.view(global_iter,folds, epochs), acc.view(global_iter,folds, epochs)
+    loss = loss.mean(1)
+    acc = acc.mean(1)
+
     loss, argmin = loss.min(dim=1)
+    pdb.set_trace
     acc = acc[torch.arange(folds, dtype=torch.long), argmin]
 
     loss_mean = loss.mean().item()
@@ -84,21 +89,27 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
 
 
 def k_fold(dataset, folds):
-    skf = StratifiedKFold(folds, shuffle=True, random_state=12345)
+    train_all=[]
+    test_all=[]
+    val_all=[]
+    for i in range(10):
+        skf = StratifiedKFold(folds, shuffle=True, random_state=i)
 
-    test_indices, train_indices = [], []
-    for _, idx in skf.split(torch.zeros(len(dataset)), dataset.data.y):
-        test_indices.append(torch.from_numpy(idx))
+        test_indices, train_indices = [], []
+        for _, idx in skf.split(torch.zeros(len(dataset)), dataset.data.y):
+            test_indices.append(torch.from_numpy(idx))
 
-    val_indices = [test_indices[i - 1] for i in range(folds)]
+        val_indices = [test_indices[i - 1] for i in range(folds)]
 
-    for i in range(folds):
-        train_mask = torch.ones(len(dataset), dtype=torch.bool)
-        train_mask[test_indices[i]] = 0
-        train_mask[val_indices[i]] = 0
-        train_indices.append(train_mask.nonzero().view(-1))
-
-    return train_indices, test_indices, val_indices
+        for i in range(folds):
+            train_mask = torch.ones(len(dataset), dtype=torch.bool)
+            train_mask[test_indices[i]] = 0
+            train_mask[val_indices[i]] = 0
+            train_indices.append(train_mask.nonzero().view(-1))
+        train_all.append(train_indices)
+        test_all.append(test_indices)
+        val_all.append(val_indices)
+    return train_all, test_all, val_all
 
 
 def num_graphs(data):
@@ -127,6 +138,7 @@ def train_diff(model, optimizer, loader):
 
     total_loss = 0
     for data in loader:
+        pdb.set_trace()
         optimizer.zero_grad()
         data = data.to(device)
         out, extra_loss = model(data)

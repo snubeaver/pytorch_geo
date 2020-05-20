@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.nn import Linear
 from torch_geometric.nn import (GCNConv, SAGPooling, global_mean_pool,
                                 JumpingKnowledge)
-
+import pdb
 
 class SAGPool(torch.nn.Module):
     def __init__(self, dataset, num_layers, hidden, ratio=0.25):
@@ -32,6 +32,7 @@ class SAGPool(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
+        pdb.set_trace()
         x = F.relu(self.conv1(x, edge_index))
         xs = [global_mean_pool(x, batch)]
         for i, conv in enumerate(self.convs):

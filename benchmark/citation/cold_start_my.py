@@ -4,14 +4,14 @@ import torch.nn.functional as F
 from gat_score import GATScore
 from torch.nn import Linear
 from datasets import get_planetoid_dataset
-from train_eval_cs import random_planetoid_splits, run
+from train_eval_mycs import random_planetoid_splits, run
 import pdb
 from torch_geometric.nn import GCNConv
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, required=True)
 parser.add_argument('--random_splits', type=bool, default=True)
-parser.add_argument('--runs', type=int, default=2708)
+parser.add_argument('--runs', type=int, default=1)
 parser.add_argument('--epochs', type=int, default=200)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--weight_decay', type=float, default=0.0005)

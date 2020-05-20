@@ -61,14 +61,15 @@ def random_planetoid_splits(data, epochs, num_classes):
 def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         permute_masks=None, logger=None):
 
-    val_losses, accs, durations = [], [], []
+    
     for _ in range(runs):
         # data = dataset[0]
         # # pdb.set_trace()
         # # if permute_masks is not None:
         # #     data = permute_masks(data, runs, dataset.num_classes)
         # data = data.to(device)
-
+        train_losses, accs, durations = [], [], []
+        
         model.to(device).reset_parameters()
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         best_val_perf = test_perf = 0
@@ -79,10 +80,7 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
 
         # t_start = time.perf_counter()
 
-        # best_val_loss = float('inf')
-        # test_acc = 0
-        # val_loss_history = []
-        # cold_accs=[]
+        
         
         data = dataset[0]
         data = data.to(device)
@@ -91,18 +89,21 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         for epoch in range(1, epochs + 1):
             # mask = torch.ones(data.x.size(), dtype=data.x.dtype, device=data.x.device)
             # mask[data.cold_mask_node] = torch.zeros(data.x.size(1), dtype=data.x.dtype, device=data.x.device )
-            
+            best_val_loss = float('inf')
+            test_acc = 0
+            val_loss_history = []
+            cold_accs=[]
             # data.masked_node = data.x[data.cold_mask_node]
             # data.x = torch.mul(data.x, mask)
 
             train_loss=train(model, optimizer, data)
-            val_perf, tmp_test_perf = evaluate(model, data)
-            if val_perf > best_val_perf:
-                best_val_perf = val_perf
-                test_perf = tmp_test_perf
-            log = 'Epoch: {:03d}, Loss: {:.4f}, Val: {:.4f}, Test: {:.4f}'
-            print(log.format(epoch, train_loss, best_val_perf, test_perf))
+            test_auc = evaluate(model, data)
+            log = 'Epoch: {:03d}, Loss: {:.4f}, Test: {:.4f}'
+            # print(log.format(epoch, train_loss, test_auc))
+            train_losses.append(train_loss)
+            accs.append(test_auc)
             
+
             # eval_info, cold_acc = evaluate(model, data)
             # cold_accs.append(cold_acc.item())
             # eval_info['epoch'] = epoch
@@ -128,13 +129,12 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         # durations.append(t_end - t_start)
         # print(cold_accs)
 
-    # loss, acc, duration = tensor(val_losses), tensor(accs), tensor(durations)
+        loss, acc = tensor(train_losses), tensor(accs)
 
-    # print('Val Loss: {:.4f},  Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-    #       format(loss.mean().item(),
-    #              acc.mean().item(),
-    #              acc.std().item(),
-    #              duration.mean().item()))
+        print('Loss: {:.4f},  Test Accuracy: {:.3f} ± {:.3f}'.
+            format(loss.mean().item(),
+                    acc.mean().item(),
+                    acc.std().item()))
 
 
 def train(model, optimizer, data):
@@ -207,8 +207,8 @@ def evaluate(model, data):
         link_labels = get_link_labels(pos_edge_index, neg_edge_index)
         link_probs = link_probs.detach().cpu().numpy()
         link_labels = link_labels.detach().cpu().numpy()
-        perfs.append(roc_auc_score(link_labels, link_probs))
-    return perfs
+        
+    return roc_auc_score(link_labels, link_probs)
 
 def get_link_labels(pos_edge_index, neg_edge_index):
     link_labels = torch.zeros(pos_edge_index.size(1) +
