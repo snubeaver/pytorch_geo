@@ -1,5 +1,5 @@
 from itertools import product
-
+import sys
 import argparse
 from datasets import get_dataset
 from train_eval import cross_validation_with_val_set
@@ -15,23 +15,41 @@ from edge_pool import EdgePool
 from global_attention import GlobalAttentionNet
 from set2set import Set2SetNet
 from sort_pool import SortPool
-from ssg import SSGPool
+from ssg import SSGPool, SSGPool_gumbel
 from mincut import MincutPool
 
+
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open("/data/project/rw/kloud/graph_benchmark/results/simple_ssgpool_notinv_MUTAG.log", "a")
+        #/data/project/rw/kloud/graph_benchmark/results/
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        #this flush method is needed for python 3 compatibility.
+        #this handles the flush command by doing nothing.
+        #you might want to specify some extra behavior here.
+        pass
+
+con_logger = Logger()
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--epochs', type=int, default=1000)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
-parser.add_argument('--lr_decay_step_size', type=int, default=50)
+parser.add_argument('--lr_decay_step_size', type=int, default=100)
 args = parser.parse_args()
 
-layers = [1, 2]
+layers = [1]#, 2, 3, 4]
 # layers = [4]
 hiddens = [16, 32, 64, 128]
-# lambdas_ = [0.05, 0.1, 0.5]
+lambdas_ = [0.0, 0.001, 0.01, 0.1, 1]
 # hiddens = [16]
-datasets = ['ENZYMES','DD' ,'IMDB-BINARY', 'PROTEINS', 'REDDIT-BINARY', 'MUTAG']  # , 'COLLAB']
+datasets = ['MUTAG']#'ENZYMES','DD' ,'IMDB-BINARY', 'PROTEINS', 'REDDIT-BINARY', 'MUTAG']  # , 'COLLAB']
 # datasets = [ ]
 nets = [
     # GCNWithJK,
@@ -52,7 +70,9 @@ nets = [
     # GIN,
     # GlobalAttentionNet,
     # Set2SetNet,
-    SortPool,
+    # SSGPool,
+    SSGPool_gumbel,
+    # DiffPool,
 ]
 
 
@@ -67,12 +87,12 @@ results = []
 for dataset_name, Net in product(datasets, nets):
     best_result = (float('inf'), 0, 0)  # (loss, acc, std)
     diff = False
-    if(Net == DiffPool or Net == SSGPool or Net == MincutPool): diff=True
+    if(Net == DiffPool or Net == SSGPool or Net == SSGPool_gumbel or Net == MincutPool): diff=True
     print('-----\n{} - {}'.format(dataset_name, Net.__name__))
-    for num_layers, hidden in product(layers, hiddens):
+    for lambda_, num_layers, hidden in product(lambdas_, layers, hiddens):
         dataset = get_dataset(dataset_name, sparse = not diff)
         # dataset = get_dataset(dataset_name, sparse = True)
-        model = Net(dataset, num_layers, hidden)
+        model = Net(dataset, num_layers, hidden, lambda_ = lambda_)
         loss, acc, std = cross_validation_with_val_set(
             dataset,
             model,
@@ -83,10 +103,10 @@ for dataset_name, Net in product(datasets, nets):
             lr_decay_factor=args.lr_decay_factor,
             lr_decay_step_size=args.lr_decay_step_size,
             weight_decay=0,
-            logger=None,
+            logger=con_logger,
             diff=diff,
         )
-        if loss < best_result[0]:
+        if acc > best_result[1]: # loss < best_result[0]:
             best_result = (loss, acc, std)
 
     desc = '{:.3f} ± {:.3f}'.format(best_result[1], best_result[2])

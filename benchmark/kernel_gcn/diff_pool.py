@@ -29,10 +29,11 @@ class Block(torch.nn.Module):
 
 
 class DiffPool(torch.nn.Module):
-    def __init__(self, dataset, num_layers, hidden, ratio=0.25):
+    def __init__(self, dataset, num_layers, hidden, ratio=0.25, lambda_=0.0):
         super(DiffPool, self).__init__()
 
         num_nodes = ceil(ratio * dataset[0].num_nodes)
+        self.lambda_ = lambda_
         self.embed_block1 = Block(dataset.num_features, hidden, hidden)
         self.pool_block1 = Block(dataset.num_features, hidden, num_nodes)
 
@@ -43,8 +44,9 @@ class DiffPool(torch.nn.Module):
             self.embed_blocks.append(Block(hidden, hidden, hidden))
             self.pool_blocks.append(Block(hidden, hidden, num_nodes))
 
-        self.jump = JumpingKnowledge(mode='cat')
-        self.lin1 = Linear((len(self.embed_blocks) + 1) * hidden, hidden)
+        self.embed_final = Block(hidden, hidden, hidden)
+        ###self.jump = JumpingKnowledge(mode='cat')
+        ###self.lin1 = Linear((len(self.embed_blocks) + 1) * hidden, hidden)
         self.lin2 = Linear(hidden, dataset.num_classes)
 
     def reset_parameters(self):
@@ -54,8 +56,9 @@ class DiffPool(torch.nn.Module):
                                            self.pool_blocks):
             embed_block.reset_parameters()
             pool_block.reset_parameters()
-        self.jump.reset_parameters()
-        self.lin1.reset_parameters()
+        self.embed_final.reset_parameters()
+        ###self.jump.reset_parameters()
+        ###self.lin1.reset_parameters()
         self.lin2.reset_parameters()
 
     def forward(self, data):
@@ -64,7 +67,7 @@ class DiffPool(torch.nn.Module):
         ent_losses = 0.
         s = self.pool_block1(x, adj, mask, add_loop=True)
         x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
-        xs = [x.mean(dim=1)]
+        ###xs = [x.mean(dim=1)]
         x, adj, link_loss, ent_loss = dense_diff_pool(x, adj, s, mask)
         link_losses+=link_loss
         ent_losses+=ent_loss
@@ -72,17 +75,19 @@ class DiffPool(torch.nn.Module):
                 zip(self.embed_blocks, self.pool_blocks)):
             s = pool_block(x, adj)
             x = F.relu(embed_block(x, adj))
-            xs.append(x.mean(dim=1))
+            ###xs.append(x.mean(dim=1))
             if i < len(self.embed_blocks) - 1:
                 x, adj, link_loss, ent_loss = dense_diff_pool(x, adj, s)
                 link_losses+=link_loss
                 ent_losses+=ent_loss
-        x = self.jump(xs)
-        x = F.relu(self.lin1(x))
+
+        x = F.relu(self.embed_final(x, adj)).mean(dim=1)
+        ###x = self.jump(xs)
+        ###x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
 
-        return F.log_softmax(x, dim=-1), link_losses+ent_losses
+        return F.log_softmax(x, dim=-1), self.lambda_*(link_losses+ent_losses)
 
     def __repr__(self):
         return self.__class__.__name__

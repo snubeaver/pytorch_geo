@@ -17,6 +17,9 @@ def arccosh(x):
     a = torch.sqrt(x*x-1)
     return torch.log(x+a)
 
+
+
+
 def dense_diff_pool(x, adj, s, mask=None):
     r"""Differentiable pooling operator from the `"Hierarchical Graph
     Representation Learning with Differentiable Pooling"
@@ -134,11 +137,52 @@ def dense_ssgpool(x, adj, s, mask=None, debug=False):
     #s_inv_T = P_inv.transpose(1, 2)
 
     x_next = torch.bmm(s_inv, x)
+    ###x_next = torch.bmm(s.transpose(1,2),x)
 
     #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
     #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
 
     return x_next, A_next, Lapl, L_next, s, s_inv
+
+def dense_ssgpool_gumbel(x, adj, s, mask=None, debug=False):
+
+
+    x = x.unsqueeze(0) if x.dim() == 2 else x
+    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
+    s_in = s.unsqueeze(0) if s.dim() == 2 else s
+
+    batch_size, num_nodes, _ = x.size()
+
+    ###s = torch.softmax(s, dim=-1)
+    s = gumbel_softmax(s_in)
+    s_soft = gumbel_softmax(s_in, hard=False)
+    if mask is not None:
+        mask_ = mask.view(batch_size, num_nodes, 1).to(x.dtype)
+        x, s = x * mask_, s * mask_
+
+    diag_ele = torch.sum(adj, -1)
+    Diag = torch.diag_embed(diag_ele)
+    Lapl = Diag - adj
+    L_next = torch.matmul(torch.matmul(s.transpose(1, 2), Lapl), s)
+    L_next_soft = torch.matmul(torch.matmul(s_soft.transpose(1, 2), Lapl), s_soft)
+    identity = torch.eye(s.size(-1)).unsqueeze(0).expand(batch_size, s.size(-1), s.size(-1)).cuda()
+    padding = torch.zeros_like(identity)
+
+    A_next = -torch.where(torch.eq(identity, 1.), padding, L_next)
+
+    '''Get feature matrix of next layer'''
+
+    s_inv = s.transpose(1, 2) / ((s * s).sum(dim=1).unsqueeze(
+        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
+
+    #s_inv_T = P_inv.transpose(1, 2)
+    x_next = torch.bmm(s.transpose(1, 2), x)
+    #x_next = torch.bmm(s_inv, x)
+
+    #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
+    #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
+
+    return x_next, A_next, Lapl, L_next_soft, s_soft, s_inv
 
 def get_Spectral_loss(L_1, L_2, s_inv, num_loss=1, mask=None, debug=False):
     """
@@ -180,7 +224,7 @@ def get_Spectral_loss(L_1, L_2, s_inv, num_loss=1, mask=None, debug=False):
 
     fiedler_idx = fiedler_idx.unsqueeze(-1).expand(B, N).unsqueeze(-1)
 
-    fv = torch.gather(v, dim=2, index=fiedler_idx)  # .detach()
+    fv = torch.gather(v, dim=2, index=fiedler_idx)  # .detach()  torch.Tensor(B,N).cuda()
     for i in range(num_loss-1):
         fv_1 = torch.gather(v, dim=2, index=fiedler_idx + i+1)  # .detach()
         fv = torch.cat((fv, fv_1), -1)
@@ -210,3 +254,93 @@ def get_Spectral_loss(L_1, L_2, s_inv, num_loss=1, mask=None, debug=False):
 
     def __repr__(self):
         return self.__class__.__name__
+
+
+
+def sample_gumbel(shape, eps=1e-10):
+    """
+    NOTE: Stolen from https://github.com/pytorch/pytorch/pull/3341/commits/327fcfed4c44c62b208f750058d14d4dc1b9a9d3
+    Sample from Gumbel(0, 1)
+    based on
+    https://github.com/ericjang/gumbel-softmax/blob/3c8584924603869e90ca74ac20a6a03d99a91ef9/Categorical%20VAE.ipynb ,
+    (MIT license)
+    """
+    U = torch.rand(shape).float()
+    return - torch.log(eps - torch.log(U + eps))
+
+
+def gumbel_softmax_sample(logits, axis, tau=1, eps=1e-10, is_training=False):
+    """
+    NOTE: Stolen from https://github.com/pytorch/pytorch/pull/3341/commits/327fcfed4c44c62b208f750058d14d4dc1b9a9d3
+    Draw a sample from the Gumbel-Softmax distribution
+    based on
+    https://github.com/ericjang/gumbel-softmax/blob/3c8584924603869e90ca74ac20a6a03d99a91ef9/Categorical%20VAE.ipynb
+    (MIT license)
+    """
+
+    # TODO: add noise sampling
+
+    if is_training == True:
+        gumbel_noise = sample_gumbel(logits.size(), eps=eps)
+        if logits.is_cuda:
+            gumbel_noise = gumbel_noise.cuda()
+        y = logits #+ gumbel_noise
+    else:
+        y = logits
+
+
+
+    y_soft = F.softmax(y / tau, dim=axis)
+    #y_soft = mysoftmax(y / tau, dim=axis, debug=debug)
+
+
+    #print(y_soft)
+    return y_soft
+
+
+def gumbel_softmax(logits, axis=-1, tau=1, hard=True, eps=1e-10, is_training=False):
+    """
+    NOTE: Stolen from https://github.com/pytorch/pytorch/pull/3341/commits/327fcfed4c44c62b208f750058d14d4dc1b9a9d3
+    Sample from the Gumbel-Softmax distribution and optionally discretize.
+    Args:
+      logits: [batch_size, n_class] unnormalized log-probs
+      tau: non-negative scalar temperature
+      hard: if True, take argmax, but differentiate w.r.t. soft sample y
+    Returns:
+      [batch_size, n_class] sample from the Gumbel-Softmax distribution.
+      If hard=True, then the returned sample will be one-hot, otherwise it will
+      be a probability distribution that sums to 1 across classes
+    Constraints:
+    - this implementation only works on batch_size x num_features tensor for now
+    based on
+    https://github.com/ericjang/gumbel-softmax/blob/3c8584924603869e90ca74ac20a6a03d99a91ef9/Categorical%20VAE.ipynb ,
+    (MIT license)
+    """
+    #logits = logits.permute(0, 2, 3, 1).contiguous()  # multihead to last dim
+
+    y_soft = gumbel_softmax_sample(logits, axis, tau=tau, eps=eps, is_training=is_training)
+
+    #y_soft = torch.where(torch.isnan(y_soft), torch.zeros_like(y_soft), y_soft)
+
+    #print("y_soft")
+    #print(y_soft[0][:,0])
+    if hard:
+        index = y_soft.max(axis, keepdim=True)[1]
+        # this bit is based on
+        # https://discuss.pytorch.org/t/stop-gradients-for-st-gumbel-softmax/530/5
+
+
+        y_hard = torch.zeros_like(logits).scatter_(axis, index, 1.0)
+
+        #y_hard = y_hard.zero_().scatter_(axis, index, 1.0)
+        # this cool bit of code achieves two things:
+        # - makes the output value exactly one-hot (since we add then
+        #   subtract y_soft value)
+        # - makes the gradient equal to y_soft gradient (since we strip
+        #   all other gradients)
+        y = y_hard - y_soft.detach() + y_soft
+    else:
+        y = y_soft
+    #if debug == True:
+
+    return y  #.permute(0, 3, 1, 2)

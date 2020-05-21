@@ -55,8 +55,8 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                 'test_acc': accs[-1],
             }
 
-            if logger is not None:
-                logger(eval_info)
+            #if logger is not None:
+            #    logger(eval_info)
 
             if epoch % lr_decay_step_size == 0:
                 for param_group in optimizer.param_groups:
@@ -77,8 +77,12 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
     acc_mean = acc.mean().item()
     acc_std = acc.std().item()
     duration_mean = duration.mean().item()
-    print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-          format(loss_mean, acc_mean, acc_std, duration_mean))
+    if logger is not None:
+        logger.write('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}\n'.
+              format(loss_mean, acc_mean, acc_std, duration_mean))
+    else:
+        print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
+              format(loss_mean, acc_mean, acc_std, duration_mean))
 
     return loss_mean, acc_mean, acc_std
 
@@ -127,11 +131,12 @@ def train_diff(model, optimizer, loader):
 
     total_loss = 0
     for data in loader:
+
         optimizer.zero_grad()
         data = data.to(device)
         out, extra_loss = model(data)
         loss = F.nll_loss(out, data.y.view(-1))
-        loss += 1.0* extra_loss
+        loss += extra_loss
         loss.backward()
         total_loss += loss.item()  * num_graphs(data)
         optimizer.step()
