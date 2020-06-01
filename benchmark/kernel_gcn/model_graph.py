@@ -162,6 +162,53 @@ def dense_diff_pool(x, adj, s, mask=None):
 
     return out, out_adj, link_loss.mean(), ent_loss.mean()
 
+def dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl_soft, mask=None, is_training=False, debug=False):
+
+
+    x = x.unsqueeze(0) if x.dim() == 2 else x
+    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
+    s_in = s.unsqueeze(0) if s.dim() == 2 else s
+
+    batch_size, num_nodes, _ = x.size()
+
+    ###s = torch.softmax(s, dim=-1)
+    s, s_soft = gumbel_softmax(s_in, is_training=is_training)
+    if mask is not None:
+        mask_ = mask.view(batch_size, num_nodes, 1).to(x.dtype)
+        x, s, s_soft = x * mask_, s * mask_, s_soft * mask_
+
+
+    #diag_ele = torch.sum(adj, -1)
+    #Diag = torch.diag_embed(diag_ele)
+    #Lapl = Diag - adj
+    L_next = torch.matmul(torch.matmul(s.transpose(1, 2), Lapl), s)
+    L_next_soft = torch.matmul(torch.matmul(s_soft.transpose(1, 2), Lapl_soft), s_soft)
+    identity = torch.eye(s.size(-1)).unsqueeze(0).expand(batch_size, s.size(-1), s.size(-1)).cuda()
+    padding = torch.zeros_like(identity)
+
+    A_next = -torch.where(torch.eq(identity, 1.), padding, L_next)
+
+    '''Get feature matrix of next layer'''
+
+    s_inv_soft = s_soft.transpose(1, 2) / ((s_soft * s_soft).sum(dim=1).unsqueeze(
+        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
+    s_inv = s.transpose(1, 2) / ((s * s).sum(dim=1).unsqueeze(
+        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
+    #s_inv_T = P_inv.transpose(1, 2)
+
+    #x_next = torch.bmm(s_inv, x)
+    #x_next = torch.bmm(s.transpose(1, 2), x)
+
+    #s_soft_inv = s_soft / (s_soft.sum(1, keepdim=True) + 1e-10)
+    x_next = torch.bmm(s_inv_soft, x)
+    #x_next = torch.bmm(s_soft.transpose(1, 2), x)
+    #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
+    #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
+
+    #return x_next, A_next, L_next_soft, s_soft, s_inv
+    return x_next, A_next, L_next, L_next_soft, s, s_soft, s_inv, s_inv_soft
+
+
 def get_spectral_loss_mini_eigen(x, s, s_inv, s_soft, s_inv_soft, L, mask=None):
 
     x = x.unsqueeze(-1)
