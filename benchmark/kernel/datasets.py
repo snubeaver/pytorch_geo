@@ -4,6 +4,8 @@ import torch
 from torch_geometric.datasets import TUDataset
 from torch_geometric.utils import degree
 import torch_geometric.transforms as T
+from torch.utils.data.dataloader import default_collate
+from torch_geometric.data import Data, Batch
 
 
 class NormalizedDegree(object):
@@ -66,3 +68,15 @@ def get_dataset(name, sparse=True, cleaned=False):
                 [dataset.transform, T.ToDense(num_nodes)])
 
     return dataset
+
+
+class MyDenseCollater(object):
+    def collate(self, data_list):
+        batch = Batch()
+        for key in data_list[0].keys:
+            batch[key] = default_collate([d[key] for d in data_list])
+        return batch
+
+    def __call__(self, batch):
+        print("call")
+        return self.collate(batch)

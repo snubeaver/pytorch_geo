@@ -6,6 +6,7 @@ from torch import tensor
 from torch.optim import Adam
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
+from datasets import MyDenseCollater, MyDenseDataLoader
 import torch_geometric.transforms as T
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -15,16 +16,18 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                                   weight_decay, logger=None, diff=False):
 
     val_losses, accs, durations = [], [], []
+
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, folds))):
-        
+        print(fold)
         train_dataset = dataset[train_idx]
         test_dataset = dataset[test_idx]
         val_dataset = dataset[val_idx]
 
         if 'adj' in train_dataset[0]:
-            train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
-            val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
-            test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
+            #train_loader = MyDenseDataLoader(train_dataset, batch_size, shuffle=True, collate_fn=MyDenseCollater(), num_workers=2)
+            train_loader = DenseLoader(train_dataset, batch_size, shuffle=True, num_workers=0)
+            val_loader = DenseLoader(val_dataset, batch_size, shuffle=False, num_workers=0)
+            test_loader = DenseLoader(test_dataset, batch_size, shuffle=False, num_workers=0)
         else:
             train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
             val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
@@ -39,6 +42,8 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
         t_start = time.perf_counter()
 
         for epoch in range(1, epochs + 1):
+            if epoch%10==1:
+                print(epoch)
             if(diff):
                 train_loss = train_diff(model, optimizer, train_loader)
                 val_losses.append(eval_loss_diff(model, val_loader))

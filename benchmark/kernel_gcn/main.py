@@ -18,11 +18,11 @@ from sort_pool import SortPool
 from ssg import SSGPool, SSGPool_gumbel
 from mincut import MincutPool
 
-
+'''
 class Logger(object):
     def __init__(self):
         self.terminal = sys.stdout
-        self.log = open("/data/project/rw/kloud/graph_benchmark/results/simple_ssgpool_notinv_MUTAG.log", "a")
+        self.log = open("/data/project/rw/kloud/graph_benchmark/results/Diff_worker24_MUTAG.log", "a")
         #/data/project/rw/kloud/graph_benchmark/results/
     def write(self, message):
         self.terminal.write(message)
@@ -35,13 +35,13 @@ class Logger(object):
         pass
 
 con_logger = Logger()
-
+'''
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=1000)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
-parser.add_argument('--lr_decay_step_size', type=int, default=100)
+parser.add_argument('--lr_decay_step_size', type=int, default=50)
 args = parser.parse_args()
 
 layers = [1]#, 2, 3, 4]
@@ -53,7 +53,7 @@ datasets = ['MUTAG']#'ENZYMES','DD' ,'IMDB-BINARY', 'PROTEINS', 'REDDIT-BINARY',
 # datasets = [ ]
 nets = [
     # GCNWithJK,
-    # DiffPool,
+    DiffPool,
     # MincutPool,
     # SAGPool,
     # # SSGPool,
@@ -71,7 +71,7 @@ nets = [
     # GlobalAttentionNet,
     # Set2SetNet,
     # SSGPool,
-    SSGPool_gumbel,
+    # SSGPool_gumbel,
     # DiffPool,
 ]
 
@@ -103,7 +103,7 @@ for dataset_name, Net in product(datasets, nets):
             lr_decay_factor=args.lr_decay_factor,
             lr_decay_step_size=args.lr_decay_step_size,
             weight_decay=0,
-            logger=con_logger,
+            logger=None,
             diff=diff,
         )
         if acc > best_result[1]: # loss < best_result[0]:
