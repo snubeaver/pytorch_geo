@@ -86,7 +86,7 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
 
     loss, argmin = loss.min(dim=1)
     # pdb.set_trace
-    acc = acc[torch.arange(folds, dtype=torch.long), argmin]
+    acc = acc #[torch.arange(folds, dtype=torch.long), argmin]
 
     loss_mean = loss.mean().item()
     acc_mean = acc.mean().item()
