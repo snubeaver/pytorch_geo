@@ -9,7 +9,15 @@ from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
 import torch_geometric.transforms as T
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def pre_eig(data):
+    adj= data.adj
+    adj = ((adj + adj.transpose(1, 2)) > 0.).float()
+    diag_ele = torch.sum(adj, -1)
+    Diag = torch.diag_embed(diag_ele)
+    Lap1 = Diag - adj
+    e, v = torch.symeig(Lap1.cpu(), eigenvectors=True)
 
+    return e,v
 def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                                   lr, lr_decay_factor, lr_decay_step_size,
                                   weight_decay, logger=None, diff=False):
@@ -140,8 +148,9 @@ def train_diff(model, optimizer, loader):
     for data in loader:
         # pdb.set_trace()
         optimizer.zero_grad()
+        e,v = pre_eig(data)
         data = data.to(device)
-        out, extra_loss = model(data)
+        out, extra_loss = model(data,e,v)
         loss = F.nll_loss(out, data.y.view(-1))
         loss += 1.0* extra_loss
         loss.backward()
@@ -165,10 +174,11 @@ def eval_acc_diff(model, loader):
 
     correct = 0
     for data in loader:
+        e,v = pre_eig(data)
         data = data.to(device)
 
         with torch.no_grad():
-            out, _ =model(data)
+            out, _ =model(data,e,v)
             pred = out.max(1)[1]
         correct += pred.eq(data.y.view(-1)).sum().item()
     return correct / len(loader.dataset)
@@ -190,9 +200,10 @@ def eval_loss_diff(model, loader):
 
     loss = 0
     for data in loader:
+        e,v = pre_eig(data)
         data = data.to(device)
 
         with torch.no_grad():
-            out, _ = model(data)
+            out, _ = model(data,e,v)
         loss += F.nll_loss(out, data.y.view(-1), reduction='sum').item()
     return loss / len(loader.dataset)

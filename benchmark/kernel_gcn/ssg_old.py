@@ -12,8 +12,8 @@ from torch.nn.utils.clip_grad import clip_grad_norm
 import numpy as np
 from collections import OrderedDict
 from torch_geometric.nn import DenseSAGEConv, JumpingKnowledge
-from model_graph import DenseGCNConv, dense_diff_pool,dense_ssgpool_gumbel, get_Spectral_loss, dense_ssgpool
-import pdb
+from model_graph import DenseGCNConv, dense_diff_pool, get_Spectral_loss, dense_ssgpool
+#from torch_geometric.nn import GCNConv
 
 
 def l2norm(X, eps=1e-10):
@@ -46,25 +46,23 @@ class GNN_Block(torch.nn.Module):
 
 
 class SSGPool(nn.Module):
-    def __init__(self, dataset, num_layers, hidden, ratio=0.1, lambda_=0.1):
+    def __init__(self, dataset, num_layers, hidden, ratio=0.25, lambda_=0.1):
         super(SSGPool, self).__init__()
-        self.hidden = hidden
 
         num_nodes = ceil(ratio * dataset[0].num_nodes)
-        self.embed_block1 = GNN_Block(dataset.num_features, hidden, hidden) #DenseGCNConv(word_dim, hidden) #
-        self.pool_block1 = GNN_Block(dataset.num_features, hidden, num_nodes) #DenseGCNConv(hidden, 20) # 
+        self.embed_block1 = Block(dataset.num_features, hidden, hidden) #DenseGCNConv(word_dim, embed_size)
+        self.pool_block1 = Block(dataset.num_features, hidden, num_nodes) #DenseGCNConv(embed_size, 20) # 
         self.lambda_=lambda_
         self.embed_blocks = torch.nn.ModuleList()
         self.pool_blocks = torch.nn.ModuleList()
-        for i in range(num_layers - 1):
+        for i in range((num_layers // 2) - 1):
             num_nodes = ceil(ratio * num_nodes)
-            self.embed_blocks.append(GNN_Block(hidden, hidden, hidden))
-            self.pool_blocks.append(GNN_Block(hidden, hidden, num_nodes))
-        self.embed_final = GNN_Block(hidden, hidden, hidden) #DenseGCNConv(hidden, hidden) #
+            self.embed_blocks.append(Block(hidden, hidden, hidden)) 
+            self.pool_blocks.append(Block(hidden, hidden, num_nodes))
         self.jump = JumpingKnowledge(mode='cat')
-        
-        self.lin1 = nn.Linear(hidden * (num_layers+1)  , hidden)
+        self.lin1 = Linear((len(self.embed_blocks) + 1) * hidden, hidden)
         self.lin2 = Linear(hidden, dataset.num_classes)
+
     def reset_parameters(self):
         self.embed_block1.reset_parameters()
         self.pool_block1.reset_parameters()
@@ -72,64 +70,56 @@ class SSGPool(nn.Module):
                                            self.pool_blocks):
             embed_block.reset_parameters()
             pool_block.reset_parameters()
+        self.jump = JumpingKnowledge(mode='cat')
         self.lin1.reset_parameters()
         self.lin2.reset_parameters()
 
 
-    def forward(self, data,e,v):
+    def forward(self, data):
         #spec_losses = 0.
         x, adj, mask = data.x, data.adj, data.mask
-        adj = ((adj + adj.transpose(1, 2)) > 0.).float()
-        spec_losses = 0.
-        spec_losses_hard = 0.
-        entr_losses = 0.
-
+        old_adj =adj
         B, N, _ = adj.size()
-        s_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
-        s_inv_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
-        s_inv_soft_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
-        ori_adj = adj
-        
         s = self.pool_block1(x, adj, mask, add_loop=True)
         x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
         xs = [x.mean(dim=1)]
-        diag_ele = torch.sum(adj, -1)
-        Diag = torch.diag_embed(diag_ele)
-        Lapl = Diag - adj
-        Lapl_ori = Lapl
+        #xs = [torch.sum(x, 1) / lengths.unsqueeze(-1).to(x.dtype)]
+        #x, adj, link_loss, entr_loss, spec_loss = dense_diff_pool(x, adj, s, mask)
+        #x, adj, link_loss, entr_loss, spec_loss = dense_diff_pool_lap(x, adj, s, mask)
 
-        x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl, mask, is_training=self.training)
+        x, adj, Lapl, L_next, s, s_inv = dense_ssgpool(x, adj, s, mask)
+        s_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
         s_final = torch.bmm(s_final, s)
-        s_inv_final = torch.bmm(s_inv, s_inv_final)
-        s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
+
+        
         # multi layer implement
         for i, (embed_block, pool_block) in enumerate(
                 zip(self.embed_blocks, self.pool_blocks)):
-            s = pool_block(x, adj, add_loop=True)
-            x = F.relu(embed_block(x, adj, add_loop=True))
+            s = pool_block(x, adj)
+            x = F.relu(embed_block(x, adj))
             xs.append(x.mean(dim=1))
-            if i < len(self.embed_blocks):
-                x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, L_next, L_next_soft, is_training=self.training)
+            if i < len(self.embed_blocks) - 1:
+                x, adj, Lapl, L_next, s, s_inv = dense_ssgpool(x, adj, s, mask)
                 s_final = torch.bmm(s_final, s)
-                s_inv_final = torch.bmm(s_inv, s_inv_final)
-                s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
                 
-        x = F.relu(self.embed_final(x, adj, add_loop=True))
-        xs.append(x.mean(dim=1))
+        # spectral loss
+        s_inv_final = s_final.transpose(1, 2) / ((s_final * s_final).sum(dim=1).unsqueeze(-1) + 1e-10)
+        spec_loss = get_Spectral_loss(Lapl, L_next, s_inv_final.transpose(1, 2), 3, mask)
+        spec_losses = spec_loss.mean()
+
+        # coarsen loss
+        identity = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+        old_adj = old_adj + identity# for new link loss
+        coarsen_loss = old_adj - torch.matmul(s_final, s_final.transpose(1,2))
+        mask_ = mask.view(B, N, 1).to(x.dtype)
+        coarsen_loss = coarsen_loss * mask_
+        coarsen_loss = coarsen_loss * mask_.transpose(1, 2)
+        coarsen_loss = torch.sqrt((coarsen_loss * coarsen_loss).sum(dim=(1, 2)))
+        coarsen_losses = coarsen_loss.mean()
+
+
         x = self.jump(xs)
-        spec_loss, spec_loss_hard = get_Spectral_loss(e,v, Lapl_ori, L_next, s_inv_final.transpose(1,2), L_next_soft, s_inv_soft_final.transpose(1, 2), 1, mask)
-
-
-
-        spec_losses += spec_loss.mean()
-        spec_losses_hard += spec_loss_hard.mean()
-        entr_losses += torch.Tensor([0.]) #entr_loss.mean()
-
-        # pdb.set_trace()
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
-        return F.log_softmax(x, dim=-1), self.lambda_*(spec_losses)
-
-    def __repr__(self):
-        return self.__class__.__name__
+        return F.log_softmax(x, dim=-1), self.lambda_*(spec_losses+coarsen_losses)

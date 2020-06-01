@@ -4,21 +4,44 @@ from torch.nn import Linear
 from torch_geometric.nn import (GCNConv, EdgePooling, global_mean_pool,
                                 JumpingKnowledge)
 
+class GNN_Block(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels):
+        super(GNN_Block, self).__init__()
+
+        self.conv1 = GCNConv(in_channels, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.lin = Linear(hidden_channels + hidden_channels, hidden_channels)
+
+
+    def reset_parameters(self):
+        self.conv1.reset_parameters()
+        self.conv2.reset_parameters()
+        self.lin.reset_parameters()
+
+    def forward(self, x, edge_index):
+        x1 = F.relu(self.conv1(x, edge_index))
+        x2 = F.relu(self.conv2(x1, edge_index))
+        out = self.lin(torch.cat((x1, x2), -1))
+
+        return out
+
 
 class EdgePool(torch.nn.Module):
-    def __init__(self, dataset, num_layers, hidden):
+    def __init__(self, dataset, num_layers, hidden, ratio):
         super(EdgePool, self).__init__()
-        self.conv1 = GCNConv(dataset.num_features, hidden)
+        self.conv1 = GNN_Block(dataset.num_features, hidden)
+        self.pool1 = EdgePooling(hidden)
         self.convs = torch.nn.ModuleList()
         self.pools = torch.nn.ModuleList()
         self.convs.extend([
-            GCNConv(hidden, hidden)
+            GNN_Block(hidden, hidden)
             for i in range(num_layers - 1)
         ])
         self.pools.extend(
-            [EdgePooling(hidden) for i in range((num_layers) // 2)])
+            [EdgePooling(hidden) for i in range((num_layers) -1)])
+        self.embed_final = GNN_Block(hidden, hidden)
         self.jump = JumpingKnowledge(mode='cat')
-        self.lin1 = Linear(num_layers * hidden, hidden)
+        self.lin1 = Linear((num_layers+1)*hidden, hidden)
         self.lin2 = Linear(hidden, dataset.num_classes)
 
     def reset_parameters(self):
@@ -34,13 +57,16 @@ class EdgePool(torch.nn.Module):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x = F.relu(self.conv1(x, edge_index))
         xs = [global_mean_pool(x, batch)]
+        x, edge_index,batch, _ = self.pool1(x, edge_index,
+                                                    batch=batch)
         for i, conv in enumerate(self.convs):
             x = F.relu(conv(x, edge_index))
             xs += [global_mean_pool(x, batch)]
-            if i % 2 == 0 and i < len(self.convs) - 1:
-                pool = self.pools[i // 2]
-                x, edge_index, _, batch, _, _ = pool(x, edge_index,
-                                                     batch=batch)
+            pool = self.pools[i]
+            x, edge_index,batch, _ = pool(x, edge_index,
+                                                    batch=batch)
+        x = self.embed_final(x, edge_index)
+        xs +=[global_mean_pool(x, batch)]
         x = self.jump(xs)
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)

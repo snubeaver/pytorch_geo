@@ -72,7 +72,7 @@ def dense_mincut_pool(x, adj, s, mask=None):
     d = _rank3_diag(d_flat)
     mincut_den = _rank3_trace(
         torch.matmul(torch.matmul(s.transpose(1, 2), d), s))
-    mincut_loss = -(mincut_num / mincut_den)
+    mincut_loss = -(mincut_num / (mincut_den+1e-10))
     mincut_loss = torch.mean(mincut_loss)
 
     # Orthogonality regularization.

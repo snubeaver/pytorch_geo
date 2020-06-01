@@ -20,22 +20,24 @@ from mincut import MincutPool
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=16)
+parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
 parser.add_argument('--lr_decay_step_size', type=int, default=50)
 args = parser.parse_args()
 
 # layers = [1, 2, 3, 4]
-layers = [1]
+layers = [1,2]
 # hiddens = [16, 32, 64, 128]
 # lambdas_ = [0.05, 0.1, 0.5]
-hiddens = [16]
-datasets = ['REDDIT-BINARY' ]  # , 'COLLAB']
-# datasets = [ 'ENZYMES','DD','IMDB-BINARY','PROTEINS','REDDIT-BINARY', ]
+ratios = [0.1, 0.2, 0.4, 0.8]
+# ratios = [0.1]
+hidden = 128
+datasets = ['MUTAG','DD']
+# datasets = [ 'ENZYMES','MUTAG','IMDB-BINARY','PROTEINS','REDDIT-BINARY',  'DD' ]
 nets = [
     # GCNWithJK,
-    # DiffPool,
+    DiffPool,
     # MincutPool,
     # SAGPool,
     # # SSGPool,
@@ -45,14 +47,14 @@ nets = [
     # # Graclus,
     # TopK,
     # 
-    #EdgePool,
+    # EdgePool,
     # GCN,
     # GraphSAGE,
     # GIN0,
     # GIN,
-    GlobalAttentionNet,
+    # GlobalAttentionNet,
     # Set2SetNet,
-    #SortPool,
+    # SortPool,
 ]
 
 
@@ -69,10 +71,10 @@ for dataset_name, Net in product(datasets, nets):
     diff = False
     if(Net == DiffPool or Net == SSGPool or Net == MincutPool): diff=True
     print('-----\n{} - {}'.format(dataset_name, Net.__name__))
-    for num_layers, hidden in product(layers, hiddens):
+    for num_layers, ratio in product(layers, ratios):
         dataset = get_dataset(dataset_name, sparse = not diff)
         # dataset = get_dataset(dataset_name, sparse = True)
-        model = Net(dataset, num_layers, hidden)
+        model = Net(dataset, num_layers, hidden, ratio)
         loss, acc, std = cross_validation_with_val_set(
             dataset,
             model,
