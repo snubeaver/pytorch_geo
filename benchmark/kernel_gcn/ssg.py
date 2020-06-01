@@ -11,8 +11,8 @@ import torch.backends.cudnn as cudnn
 from torch.nn.utils.clip_grad import clip_grad_norm
 import numpy as np
 from collections import OrderedDict
-from torch_geometric.nn import DenseSAGEConv, JumpingKnowledge
-from model_graph import DenseGCNConv, dense_diff_pool,dense_ssgpool_gumbel, get_Spectral_loss, dense_ssgpool
+from torch_geometric.nn import DenseGCNConv, DenseSAGEConv, JumpingKnowledge
+from model_graph import  dense_diff_pool,dense_ssgpool_gumbel, get_spectral_loss_mini_eigen
 import pdb
 
 
@@ -128,13 +128,13 @@ class SSGPool(nn.Module):
         if self.lambda_ != 0.0:
             spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final,
                                                                      s_inv_soft_final, Lapl_ori, mask)
+            spec_losses += spec_loss
         else:
             spec_losses = 0.0
-        spec_losses += spec_loss
+
 
 
         x = self.jump(xs)
-        ###x = F.relu(self.lin1(x))
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
