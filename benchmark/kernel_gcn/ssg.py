@@ -82,12 +82,10 @@ class SSGPool(nn.Module):
         spec_losses = 0.
         spec_losses_hard = 0.
 
-        if adj.dim()==2:
-            B = 1
-            N = adj.size(-1)
-        else:
-            B, N, _ = adj.size()
-
+        x = x.unsqueeze(0) if x.dim() == 2 else x
+        adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
+        mask = mask.unsqueeze(0) if mask.dim() == 1 else mask
+        B, N, _ = adj.size()
 
 
 
@@ -134,12 +132,13 @@ class SSGPool(nn.Module):
         # feature_out = x.mean(dim=1)
 
         if self.lambda_ != 0.0 or x.requires_grad ==True:
-            #fv = data['fv']
-            #spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final,s_inv_soft_final, Lapl_ori, mask)
-            #spec_losses += spec_loss
-            spec_losses = torch.Tensor([0.])
+            fv = data['fv']
+            fv = fv.unsqueeze(0) if fv.dim() == 1 else fv
+            spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final, s_inv_soft_final, Lapl_ori, mask)
+            spec_losses += spec_loss
+            #spec_losses += torch.Tensor([0.])
         else:
-            spec_losses = torch.Tensor([0.])
+            spec_losses += torch.Tensor([0.])
 
 
         spec_losses = spec_losses.mean()
