@@ -38,12 +38,13 @@ con_logger = Logger()
 '''
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
 parser.add_argument('--lr_decay_step_size', type=int, default=50)
 args = parser.parse_args()
 
+<<<<<<< HEAD
 layers = [1]#, 2, 3, 4]
 # layers = [4]
 hiddens = [16, 32, 64, 128]
@@ -57,13 +58,26 @@ nets = [
     # MincutPool,
     # SAGPool,
     # # SSGPool,
+=======
+layers = [1, 2]
+ratios = [0.1, 0.2, 0.4, 0.8]
+hiddens = [128]
+datasets = ['ENZYMES','MUTAG', 'IMDB-BINARY', 'PROTEINS','REDDIT-BINARY' ]  # , 'COLLAB']
+# datasets = ['MUTAG' ]
+nets = [
+    # GCNWithJK,
+    DiffPool,
+    MincutPool,
+    SAGPool,
+    # SSGPool,
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
     # # GraphSAGEWithJK,
     # # GIN0WithJK,
     # # GINWithJK,
     # # Graclus,
-    # TopK,
+    TopK,
     # 
-    # EdgePool,
+    EdgePool,
     # GCN,
     # GraphSAGE,
     # GIN0,
@@ -83,16 +97,25 @@ def logger(info):
         fold, epoch, val_loss, test_acc))
 
 
+
 results = []
 for dataset_name, Net in product(datasets, nets):
     best_result = (float('inf'), 0, 0)  # (loss, acc, std)
     diff = False
     if(Net == DiffPool or Net == SSGPool or Net == SSGPool_gumbel or Net == MincutPool): diff=True
     print('-----\n{} - {}'.format(dataset_name, Net.__name__))
+<<<<<<< HEAD
     for lambda_, num_layers, hidden in product(lambdas_, layers, hiddens):
         dataset = get_dataset(dataset_name, sparse = not diff)
         # dataset = get_dataset(dataset_name, sparse = True)
         model = Net(dataset, num_layers, hidden, lambda_ = lambda_)
+=======
+    for num_layers, hidden, ratio in product(layers, hiddens, ratios):
+        dataset = get_dataset(dataset_name, sparse = not diff)
+        # dataset = get_dataset(dataset_name, sparse = True)
+        # dataset[0] = pre_eig(dataset[0])
+        model = Net(dataset, num_layers, hidden,ratio)
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
         loss, acc, std = cross_validation_with_val_set(
             dataset,
             model,

@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch.nn import Linear
+import pdb
 from torch_geometric.nn import SAGEConv, GlobalAttention
 
 
@@ -28,6 +29,7 @@ class GlobalAttentionNet(torch.nn.Module):
         x = F.relu(self.conv1(x, edge_index))
         for conv in self.convs:
             x = F.relu(conv(x, edge_index))
+        pdb.set_trace()
         x = self.att(x, batch)
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)

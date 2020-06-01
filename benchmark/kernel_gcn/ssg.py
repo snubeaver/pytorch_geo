@@ -11,9 +11,15 @@ import torch.backends.cudnn as cudnn
 from torch.nn.utils.clip_grad import clip_grad_norm
 import numpy as np
 from collections import OrderedDict
+<<<<<<< HEAD
 from torch_geometric.nn import DenseGCNConv, DenseSAGEConv, JumpingKnowledge
 from model_graph import dense_diff_pool, get_Spectral_loss, dense_ssgpool, dense_ssgpool_gumbel
 #from torch_geometric.nn import GCNConv
+=======
+from torch_geometric.nn import DenseSAGEConv, JumpingKnowledge
+from model_graph import DenseGCNConv, dense_diff_pool,dense_ssgpool_gumbel, get_Spectral_loss, dense_ssgpool
+import pdb
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
 
 
 def l2norm(X, eps=1e-10):
@@ -23,14 +29,21 @@ def l2norm(X, eps=1e-10):
     X = torch.div(X, norm+eps)
     return X
 
-class Block(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, mode='cat'):
-        super(Block, self).__init__()
+class GNN_Block(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels):
+        super(GNN_Block, self).__init__()
 
+        self.conv1 = DenseGCNConv(in_channels, hidden_channels)
+        self.conv2 = DenseGCNConv(hidden_channels, hidden_channels)
+        self.lin = nn.Linear(hidden_channels + hidden_channels, out_channels)
+
+<<<<<<< HEAD
         self.conv1 = DenseGCNConv(in_channels, out_channels)
         # self.conv2 = DenseGCNConv(hidden_channels, hidden_channels)
         # self.lin = Linear(hidden_channels + hidden_channels, out_channels)
 
+=======
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
 
     def reset_parameters(self):
         self.conv1.reset_parameters()
@@ -38,23 +51,33 @@ class Block(torch.nn.Module):
         # self.lin.reset_parameters()
 
     def forward(self, x, adj, mask=None, add_loop=True):
+<<<<<<< HEAD
         x1 = self.conv1(x, adj, mask, add_loop)
         # x1 = F.relu(self.conv1(x, adj, mask, add_loop))
         # x2 = F.relu(self.conv2(x1, adj, mask, add_loop))
         # out = self.lin(torch.cat((x1, x2), -1))
         return x1
+=======
+        x1 = F.relu(self.conv1(x, adj, mask, add_loop))
+        x2 = F.relu(self.conv2(x1, adj, mask, add_loop))
+        out = self.lin(torch.cat((x1, x2), -1))
+
+        return out
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
 
 
 class SSGPool(nn.Module):
     def __init__(self, dataset, num_layers, hidden, ratio=0.1, lambda_=0.1):
         super(SSGPool, self).__init__()
+        self.hidden = hidden
 
         num_nodes = ceil(ratio * dataset[0].num_nodes)
-        self.embed_block1 = Block(dataset.num_features, hidden, hidden) #DenseGCNConv(word_dim, embed_size)
-        self.pool_block1 = Block(dataset.num_features, hidden, num_nodes) #DenseGCNConv(embed_size, 20) # 
+        self.embed_block1 = GNN_Block(dataset.num_features, hidden, hidden) #DenseGCNConv(word_dim, hidden) #
+        self.pool_block1 = GNN_Block(dataset.num_features, hidden, num_nodes) #DenseGCNConv(hidden, 20) # 
         self.lambda_=lambda_
         self.embed_blocks = torch.nn.ModuleList()
         self.pool_blocks = torch.nn.ModuleList()
+<<<<<<< HEAD
         for i in range(num_layers-1):
             num_nodes = ceil(ratio * num_nodes)
             self.embed_blocks.append(Block(hidden, hidden, hidden))
@@ -63,8 +86,17 @@ class SSGPool(nn.Module):
         self.embed_final = Block(hidden, hidden, hidden) #kwon added
         ###self.jump = JumpingKnowledge(mode='cat')
         ###self.lin1 = Linear((len(self.embed_blocks) + 1) * hidden, hidden)
+=======
+        for i in range(num_layers - 1):
+            num_nodes = ceil(ratio * num_nodes)
+            self.embed_blocks.append(GNN_Block(hidden, hidden, hidden))
+            self.pool_blocks.append(GNN_Block(hidden, hidden, num_nodes))
+        self.embed_final = GNN_Block(hidden, hidden, hidden) #DenseGCNConv(hidden, hidden) #
+        self.jump = JumpingKnowledge(mode='cat')
+        
+        self.lin1 = nn.Linear(hidden * (num_layers+1)  , hidden)
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
         self.lin2 = Linear(hidden, dataset.num_classes)
-
     def reset_parameters(self):
         self.embed_block1.reset_parameters()
         self.pool_block1.reset_parameters()
@@ -72,6 +104,7 @@ class SSGPool(nn.Module):
                                            self.pool_blocks):
             embed_block.reset_parameters()
             pool_block.reset_parameters()
+<<<<<<< HEAD
         self.embed_final.reset_parameters()
         ###self.jump = JumpingKnowledge(mode='cat')
         ###self.lin1.reset_parameters()
@@ -95,10 +128,34 @@ class SSGPool(nn.Module):
         x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
         xs = [torch.sum(x, 1) / (mask.sum(-1, keepdims=True).to(x.dtype) + 1e-10)]
 
+=======
+        self.lin1.reset_parameters()
+        self.lin2.reset_parameters()
+
+
+    def forward(self, data,e,v):
+        #spec_losses = 0.
+        x, adj, mask = data.x, data.adj, data.mask
+        adj = ((adj + adj.transpose(1, 2)) > 0.).float()
+        spec_losses = 0.
+        spec_losses_hard = 0.
+        entr_losses = 0.
+
+        B, N, _ = adj.size()
+        s_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+        s_inv_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+        s_inv_soft_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+        ori_adj = adj
+        
+        s = self.pool_block1(x, adj, mask, add_loop=True)
+        x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
+        xs = [x.mean(dim=1)]
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
         diag_ele = torch.sum(adj, -1)
         Diag = torch.diag_embed(diag_ele)
         Lapl = Diag - adj
         Lapl_ori = Lapl
+<<<<<<< HEAD
 
         x, adj, L_next, L_next_soft, s, s_soft, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl, mask,
                                                                                          is_training=self.training)
@@ -108,12 +165,21 @@ class SSGPool(nn.Module):
         s_inv_final = torch.bmm(s_inv, s_inv_final)
         s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
 
+=======
+
+        x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl, mask, is_training=self.training)
+        s_final = torch.bmm(s_final, s)
+        s_inv_final = torch.bmm(s_inv, s_inv_final)
+        s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
+        # multi layer implement
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910
         for i, (embed_block, pool_block) in enumerate(
                 zip(self.embed_blocks, self.pool_blocks)):
             s = pool_block(x, adj, add_loop=True)
             x = F.relu(embed_block(x, adj, add_loop=True))
             xs.append(x.mean(dim=1))
             if i < len(self.embed_blocks):
+<<<<<<< HEAD
                 x, adj, L_next, L_next_soft, s, s_soft, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, L_next,
                                                                                                  L_next_soft,
                                                                                                  is_training=self.training)
@@ -146,3 +212,29 @@ class SSGPool(nn.Module):
 
 
 
+=======
+                x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, L_next, L_next_soft, is_training=self.training)
+                s_final = torch.bmm(s_final, s)
+                s_inv_final = torch.bmm(s_inv, s_inv_final)
+                s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
+                
+        x = F.relu(self.embed_final(x, adj, add_loop=True))
+        xs.append(x.mean(dim=1))
+        x = self.jump(xs)
+        spec_loss, spec_loss_hard = get_Spectral_loss(e,v, Lapl_ori, L_next, s_inv_final.transpose(1,2), L_next_soft, s_inv_soft_final.transpose(1, 2), 1, mask)
+
+
+
+        spec_losses += spec_loss.mean()
+        spec_losses_hard += spec_loss_hard.mean()
+        entr_losses += torch.Tensor([0.]) #entr_loss.mean()
+
+        # pdb.set_trace()
+        x = F.relu(self.lin1(x))
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = self.lin2(x)
+        return F.log_softmax(x, dim=-1), self.lambda_*(spec_losses)
+
+    def __repr__(self):
+        return self.__class__.__name__
+>>>>>>> b85669844b6d7eb351ce3c20e0b450588aecc910

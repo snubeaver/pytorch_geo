@@ -1,12 +1,12 @@
 import os.path as osp
-
+import pdb
 import argparse
 import torch
 import torch.nn.functional as F
 from torch_geometric.datasets import Planetoid
 import torch_geometric.transforms as T
 from torch_geometric.nn import GCNConv, GAE, VGAE
-from torch_geometric.utils import train_test_split_edges
+from train_test_split_edges import train_test_split_edges
 
 torch.manual_seed(12345)
 
@@ -50,7 +50,7 @@ data.train_mask = data.val_mask = data.test_mask = data.y = None
 data = train_test_split_edges(data)
 x, train_pos_edge_index = data.x.to(dev), data.train_pos_edge_index.to(dev)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
+pdb.set_trace()
 
 def train():
     model.train()

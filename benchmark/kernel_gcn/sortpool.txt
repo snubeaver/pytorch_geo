@@ -1,0 +1,80 @@
+Script started on 2020-04-24 17:17:01+0900
+(base) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ conda actia[Kvate gnn
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ pt[K[Kpython main.py 
+-----
+ENZYMES - SortPool
+Val Loss: 1.7128, Test Accuracy: 0.273 ± 0.062, Duration: 6.596
+Val Loss: 1.6904, Test Accuracy: 0.268 ± 0.049, Duration: 6.563
+Val Loss: 1.6567, Test Accuracy: 0.270 ± 0.043, Duration: 6.600
+Val Loss: 1.6608, Test Accuracy: 0.267 ± 0.034, Duration: 6.668
+Val Loss: 1.7096, Test Accuracy: 0.248 ± 0.057, Duration: 7.147
+Val Loss: 1.6936, Test Accuracy: 0.268 ± 0.069, Duration: 7.158
+Val Loss: 1.6884, Test Accuracy: 0.252 ± 0.048, Duration: 7.204
+Val Loss: 1.6902, Test Accuracy: 0.292 ± 0.052, Duration: 7.307
+Best result - 0.270 ± 0.043
+-----
+DD - SortPool
+Val Loss: 0.5509, Test Accuracy: 0.729 ± 0.039, Duration: 37.039
+Val Loss: 0.5369, Test Accuracy: 0.710 ± 0.060, Duration: 37.403
+Val Loss: 0.5333, Test Accuracy: 0.709 ± 0.042, Duration: 40.161
+Val Loss: 0.5457, Test Accuracy: 0.705 ± 0.044, Duration: 42.531
+Val Loss: 0.5437, Test Accuracy: 0.694 ± 0.047, Duration: 38.814
+Val Loss: 0.5292, Test Accuracy: 0.733 ± 0.031, Duration: 39.420
+Val Loss: 0.5288, Test Accuracy: 0.726 ± 0.057, Duration: 41.802
+Val Loss: 0.5604, Test Accuracy: 0.740 ± 0.050, Duration: 46.637
+Best result - 0.726 ± 0.057
+-----
+IMDB-BINARY - SortPool
+Val Loss: 0.4940, Test Accuracy: 0.711 ± 0.054, Duration: 15.026
+Val Loss: 0.4878, Test Accuracy: 0.709 ± 0.035, Duration: 15.012
+Val Loss: 0.4890, Test Accuracy: 0.715 ± 0.040, Duration: 15.090
+Val Loss: 0.4741, Test Accuracy: 0.722 ± 0.051, Duration: 15.193
+Val Loss: 0.4988, Test Accuracy: 0.713 ± 0.059, Duration: 15.941
+Val Loss: 0.4901, Test Accuracy: 0.725 ± 0.038, Duration: 15.932
+Val Loss: 0.4769, Test Accuracy: 0.723 ± 0.046, Duration: 15.997
+Val Loss: 0.4791, Test Accuracy: 0.738 ± 0.058, Duration: 16.198
+Best result - 0.722 ± 0.051
+-----
+PROTEINS - SortPool
+Val Loss: 0.5624, Test Accuracy: 0.711 ± 0.051, Duration: 11.917
+Val Loss: 0.5513, Test Accuracy: 0.721 ± 0.030, Duration: 11.905
+Val Loss: 0.5583, Test Accuracy: 0.721 ± 0.040, Duration: 12.050
+Val Loss: 0.5473, Test Accuracy: 0.721 ± 0.034, Duration: 12.268
+Val Loss: 0.5504, Test Accuracy: 0.733 ± 0.032, Duration: 12.757
+Val Loss: 0.5453, Test Accuracy: 0.715 ± 0.046, Duration: 12.790
+Val Loss: 0.5462, Test Accuracy: 0.703 ± 0.035, Duration: 12.975
+Val Loss: 0.5263, Test Accuracy: 0.728 ± 0.040, Duration: 13.335
+Best result - 0.728 ± 0.040
+-----
+REDDIT-BINARY - SortPool
+Val Loss: 0.4744, Test Accuracy: 0.738 ± 0.026, Duration: 45.365
+Val Loss: 0.4709, Test Accuracy: 0.743 ± 0.025, Duration: 45.910
+Val Loss: 0.4619, Test Accuracy: 0.748 ± 0.022, Duration: 47.458
+Val Loss: 0.4682, Test Accuracy: 0.744 ± 0.025, Duration: 52.727
+Val Loss: 0.3700, Test Accuracy: 0.817 ± 0.024, Duration: 47.549
+Val Loss: 0.3413, Test Accuracy: 0.845 ± 0.038, Duration: 47.681
+Val Loss: 0.3420, Test Accuracy: 0.827 ± 0.029, Duration: 50.953
+Val Loss: 0.3384, Test Accuracy: 0.832 ± 0.028, Duration: 59.812
+Best result - 0.832 ± 0.028
+-----
+MUTAG - SortPool
+Val Loss: 0.4623, Test Accuracy: 0.782 ± 0.102, Duration: 2.514
+Val Loss: 0.4440, Test Accuracy: 0.814 ± 0.072, Duration: 2.512
+Val Loss: 0.4366, Test Accuracy: 0.825 ± 0.056, Duration: 2.522
+Val Loss: 0.4286, Test Accuracy: 0.819 ± 0.072, Duration: 2.506
+Val Loss: 0.4460, Test Accuracy: 0.770 ± 0.141, Duration: 2.847
+Val Loss: 0.4332, Test Accuracy: 0.792 ± 0.085, Duration: 2.884
+Val Loss: 0.4112, Test Accuracy: 0.804 ± 0.074, Duration: 2.892
+Val Loss: 0.4075, Test Accuracy: 0.786 ± 0.090, Duration: 2.892
+Best result - 0.786 ± 0.090
+-----
+ENZYMES - SortPool: 0.270 ± 0.043
+DD - SortPool: 0.726 ± 0.057
+IMDB-BINARY - SortPool: 0.722 ± 0.051
+PROTEINS - SortPool: 0.728 ± 0.040
+REDDIT-BINARY - SortPool: 0.832 ± 0.028
+MUTAG - SortPool: 0.786 ± 0.090
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$  [Kwx[K[Kexit
+exit
+
+Script done on 2020-04-24 21:15:38+0900

@@ -1,0 +1,80 @@
+Script started on 2020-04-24 21:16:18+0900
+(base) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ scrip[K[K[K[K[Kcopnda[K[K[K[K[Konda activate gnn
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ pt[Kython main.py 
+-----
+ENZYMES - TopK
+Val Loss: 1.7222, Test Accuracy: 0.253 ± 0.054, Duration: 6.158
+Val Loss: 1.7017, Test Accuracy: 0.285 ± 0.072, Duration: 6.191
+Val Loss: 1.6769, Test Accuracy: 0.290 ± 0.046, Duration: 6.180
+Val Loss: 1.6678, Test Accuracy: 0.312 ± 0.059, Duration: 6.165
+Val Loss: 1.7175, Test Accuracy: 0.247 ± 0.034, Duration: 6.837
+Val Loss: 1.6855, Test Accuracy: 0.268 ± 0.051, Duration: 6.868
+Val Loss: 1.6666, Test Accuracy: 0.278 ± 0.049, Duration: 6.863
+Val Loss: 1.6435, Test Accuracy: 0.308 ± 0.097, Duration: 6.947
+Best result - 0.308 ± 0.097
+-----
+DD - TopK
+Val Loss: 0.5810, Test Accuracy: 0.721 ± 0.038, Duration: 32.998
+Val Loss: 0.5619, Test Accuracy: 0.717 ± 0.035, Duration: 33.466
+Val Loss: 0.5577, Test Accuracy: 0.731 ± 0.041, Duration: 34.913
+Val Loss: 0.5558, Test Accuracy: 0.729 ± 0.019, Duration: 36.242
+Val Loss: 0.5668, Test Accuracy: 0.725 ± 0.044, Duration: 34.807
+Val Loss: 0.5577, Test Accuracy: 0.717 ± 0.035, Duration: 35.780
+Val Loss: 0.5508, Test Accuracy: 0.727 ± 0.020, Duration: 38.009
+Val Loss: 0.5506, Test Accuracy: 0.732 ± 0.024, Duration: 41.968
+Best result - 0.732 ± 0.024
+-----
+IMDB-BINARY - TopK
+Val Loss: 0.4812, Test Accuracy: 0.728 ± 0.040, Duration: 14.408
+Val Loss: 0.4775, Test Accuracy: 0.732 ± 0.047, Duration: 14.508
+Val Loss: 0.4769, Test Accuracy: 0.719 ± 0.026, Duration: 14.419
+Val Loss: 0.4748, Test Accuracy: 0.729 ± 0.054, Duration: 14.510
+Val Loss: 0.4759, Test Accuracy: 0.720 ± 0.033, Duration: 15.559
+Val Loss: 0.4725, Test Accuracy: 0.724 ± 0.031, Duration: 15.531
+Val Loss: 0.4765, Test Accuracy: 0.724 ± 0.040, Duration: 15.426
+Val Loss: 0.4668, Test Accuracy: 0.726 ± 0.043, Duration: 15.781
+Best result - 0.726 ± 0.043
+-----
+PROTEINS - TopK
+Val Loss: 0.5930, Test Accuracy: 0.708 ± 0.050, Duration: 11.047
+Val Loss: 0.5728, Test Accuracy: 0.718 ± 0.037, Duration: 11.124
+Val Loss: 0.5618, Test Accuracy: 0.717 ± 0.035, Duration: 11.199
+Val Loss: 0.5553, Test Accuracy: 0.719 ± 0.046, Duration: 11.295
+Val Loss: 0.5796, Test Accuracy: 0.718 ± 0.037, Duration: 12.209
+Val Loss: 0.5641, Test Accuracy: 0.710 ± 0.035, Duration: 12.168
+Val Loss: 0.5577, Test Accuracy: 0.712 ± 0.036, Duration: 12.260
+Val Loss: 0.5524, Test Accuracy: 0.713 ± 0.049, Duration: 12.510
+Best result - 0.713 ± 0.049
+-----
+REDDIT-BINARY - TopK
+Val Loss: 0.4703, Test Accuracy: 0.743 ± 0.047, Duration: 30.705
+Val Loss: 0.3856, Test Accuracy: 0.824 ± 0.048, Duration: 31.428
+Val Loss: 0.3422, Test Accuracy: 0.857 ± 0.019, Duration: 32.547
+Val Loss: 0.3286, Test Accuracy: 0.851 ± 0.023, Duration: 34.821
+Val Loss: 0.4278, Test Accuracy: 0.771 ± 0.056, Duration: 33.162
+Val Loss: 0.3619, Test Accuracy: 0.841 ± 0.041, Duration: 34.591
+Val Loss: 0.3180, Test Accuracy: 0.862 ± 0.028, Duration: 37.426
+Val Loss: 0.3146, Test Accuracy: 0.870 ± 0.025, Duration: 42.995
+Best result - 0.870 ± 0.025
+-----
+MUTAG - TopK
+Val Loss: 0.5346, Test Accuracy: 0.713 ± 0.070, Duration: 2.267
+Val Loss: 0.5215, Test Accuracy: 0.697 ± 0.114, Duration: 2.312
+Val Loss: 0.5211, Test Accuracy: 0.713 ± 0.080, Duration: 2.264
+Val Loss: 0.5142, Test Accuracy: 0.729 ± 0.094, Duration: 2.293
+Val Loss: 0.5280, Test Accuracy: 0.696 ± 0.099, Duration: 2.694
+Val Loss: 0.5092, Test Accuracy: 0.750 ± 0.075, Duration: 2.683
+Val Loss: 0.5015, Test Accuracy: 0.713 ± 0.107, Duration: 2.738
+Val Loss: 0.4907, Test Accuracy: 0.735 ± 0.093, Duration: 2.708
+Best result - 0.735 ± 0.093
+-----
+ENZYMES - TopK: 0.308 ± 0.097
+DD - TopK: 0.732 ± 0.024
+IMDB-BINARY - TopK: 0.726 ± 0.043
+PROTEINS - TopK: 0.713 ± 0.049
+REDDIT-BINARY - TopK: 0.870 ± 0.025
+MUTAG - TopK: 0.735 ± 0.093
+(gnn) ]0;snubeaver@snubeaver-desktop: ~/Research/pytorch_geometric/benchmark/kernel_gcn[01;32msnubeaver@snubeaver-desktop[00m:[01;34m~/Research/pytorch_geometric/benchmark/kernel_gcn[00m$ exit
+exit
+
+Script done on 2020-04-25 09:49:04+0900
