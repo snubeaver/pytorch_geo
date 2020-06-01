@@ -33,8 +33,8 @@ lambdas_ = [0.00]
 # lambdas_ = [0.05, 0.1, 0.5]
 ratios = [0.1, 0.2, 0.4, 0.8]
 hiddens = [128]
-datasets = ['IMDB-BINARY', 'PROTEINS','ENZYMES', 'REDDIT-BINARY' ]  # , 'COLLAB']
-# datasets = ['MUTAG' ]
+#datasets = ['IMDB-BINARY', 'PROTEINS','ENZYMES', 'REDDIT-BINARY' ]  # , 'COLLAB']
+datasets = ['MUTAG','ENZYMES' ]
 nets = [
     # GCNWithJK,
     # DiffPool,

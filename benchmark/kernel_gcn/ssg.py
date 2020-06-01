@@ -78,12 +78,20 @@ class SSGPool(nn.Module):
 
     def forward(self, data):
         x, adj, mask = data.x, data.adj, data.mask
-        fv = data['fv']
+
         spec_losses = 0.
         spec_losses_hard = 0.
 
+        if adj.dim()==2:
+            B = 1
+            N = adj.size(-1)
+        else:
+            B, N, _ = adj.size()
 
-        B, N, _ = adj.size()
+
+
+
+
         s_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
         s_soft_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
         s_inv_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
@@ -125,14 +133,16 @@ class SSGPool(nn.Module):
 
         # feature_out = x.mean(dim=1)
 
-        if self.lambda_ != 0.0:
-            spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final,
-                                                                     s_inv_soft_final, Lapl_ori, mask)
-            spec_losses += spec_loss
+        if self.lambda_ != 0.0 or x.requires_grad ==True:
+            #fv = data['fv']
+            #spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final,s_inv_soft_final, Lapl_ori, mask)
+            #spec_losses += spec_loss
+            spec_losses = torch.Tensor([0.])
         else:
-            spec_losses = 0.0
+            spec_losses = torch.Tensor([0.])
 
 
+        spec_losses = spec_losses.mean()
 
         x = self.jump(xs)
         x = F.relu(self.lin1(x))

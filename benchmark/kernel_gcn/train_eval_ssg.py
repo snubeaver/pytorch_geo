@@ -6,6 +6,7 @@ from torch import tensor
 from torch.optim import Adam
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
+from datasets import MyDenseCollater, MyDenseDataLoader
 import torch_geometric.transforms as T
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,7 +24,7 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                                   weight_decay, logger=None, diff=False):
     
     val_losses, accs, durations = [], [], []
-    global_iter =10
+    global_iter =1
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, folds))):
         for i in range(global_iter):
             train_dataset = dataset[train_idx[i]]
@@ -31,9 +32,10 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
             val_dataset = dataset[val_idx[i]]
 
             if 'adj' in train_dataset[0]:
-                train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
-                val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
-                test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
+                #train_loader = MyDenseDataLoader(train_dataset, batch_size, shuffle=True, collate_fn=MyDenseCollater())
+                train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
+                val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
+                test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
             else:
                 train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
                 val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
@@ -148,11 +150,10 @@ def train_diff(model, optimizer, loader):
     for data in loader:
         # pdb.set_trace()
         optimizer.zero_grad()
-        e,v = pre_eig(data)
         data = data.to(device)
-        out, extra_loss = model(data,e,v)
+        out, extra_loss = model(data)
         loss = F.nll_loss(out, data.y.view(-1))
-        loss += 1.0* extra_loss
+        loss += 1.0 * extra_loss
         loss.backward()
         total_loss += loss.item()  * num_graphs(data)
         optimizer.step()
@@ -174,11 +175,10 @@ def eval_acc_diff(model, loader):
 
     correct = 0
     for data in loader:
-        e,v = pre_eig(data)
         data = data.to(device)
 
         with torch.no_grad():
-            out, _ =model(data,e,v)
+            out, _ =model(data)
             pred = out.max(1)[1]
         correct += pred.eq(data.y.view(-1)).sum().item()
     return correct / len(loader.dataset)
@@ -200,10 +200,10 @@ def eval_loss_diff(model, loader):
 
     loss = 0
     for data in loader:
-        e,v = pre_eig(data)
+
         data = data.to(device)
 
         with torch.no_grad():
-            out, _ = model(data,e,v)
+            out, _ = model(data)
         loss += F.nll_loss(out, data.y.view(-1), reduction='sum').item()
     return loss / len(loader.dataset)

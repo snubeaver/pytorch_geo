@@ -47,8 +47,8 @@ args = parser.parse_args()
 layers = [1, 2]
 ratios = [0.1, 0.2, 0.4, 0.8]
 hiddens = [128]
-datasets = ['ENZYMES','MUTAG', 'IMDB-BINARY', 'PROTEINS','REDDIT-BINARY' ]  # , 'COLLAB']
-# datasets = ['MUTAG' ]
+#datasets = ['ENZYMES','MUTAG', 'IMDB-BINARY', 'PROTEINS','REDDIT-BINARY' ]  # , 'COLLAB']
+datasets = ['MUTAG']
 nets = [
     # GCNWithJK,
     DiffPool,
