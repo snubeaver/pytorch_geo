@@ -1,5 +1,5 @@
 from itertools import product
-
+import sys
 import argparse
 from datasets import get_dataset
 from train_eval import cross_validation_with_val_set
@@ -15,9 +15,27 @@ from edge_pool import EdgePool
 from global_attention import GlobalAttentionNet
 from set2set import Set2SetNet
 from sort_pool import SortPool
-from ssg import SSGPool
+from ssg import SSGPool, SSGPool_gumbel
 from mincut import MincutPool
 
+'''
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open("/data/project/rw/kloud/graph_benchmark/results/Diff_worker24_MUTAG.log", "a")
+        #/data/project/rw/kloud/graph_benchmark/results/
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        #this flush method is needed for python 3 compatibility.
+        #this handles the flush command by doing nothing.
+        #you might want to specify some extra behavior here.
+        pass
+
+con_logger = Logger()
+'''
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
@@ -50,7 +68,9 @@ nets = [
     # GIN,
     # GlobalAttentionNet,
     # Set2SetNet,
-    SortPool,
+    # SSGPool,
+    # SSGPool_gumbel,
+    # DiffPool,
 ]
 
 
@@ -66,7 +86,7 @@ results = []
 for dataset_name, Net in product(datasets, nets):
     best_result = (float('inf'), 0, 0)  # (loss, acc, std)
     diff = False
-    if(Net == DiffPool or Net == SSGPool or Net == MincutPool): diff=True
+    if(Net == DiffPool or Net == SSGPool or Net == SSGPool_gumbel or Net == MincutPool): diff=True
     print('-----\n{} - {}'.format(dataset_name, Net.__name__))
     for num_layers, hidden, ratio in product(layers, hiddens, ratios):
         dataset = get_dataset(dataset_name, sparse = not diff)
@@ -86,7 +106,7 @@ for dataset_name, Net in product(datasets, nets):
             logger=None,
             diff=diff,
         )
-        if loss < best_result[0]:
+        if acc > best_result[1]: # loss < best_result[0]:
             best_result = (loss, acc, std)
 
     desc = '{:.3f} ± {:.3f}'.format(best_result[1], best_result[2])

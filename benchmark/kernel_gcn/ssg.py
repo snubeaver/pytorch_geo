@@ -34,8 +34,8 @@ class GNN_Block(torch.nn.Module):
 
     def reset_parameters(self):
         self.conv1.reset_parameters()
-        self.conv2.reset_parameters()
-        self.lin.reset_parameters()
+        # self.conv2.reset_parameters()
+        # self.lin.reset_parameters()
 
     def forward(self, x, adj, mask=None, add_loop=True):
         x1 = F.relu(self.conv1(x, adj, mask, add_loop))
@@ -76,60 +76,75 @@ class SSGPool(nn.Module):
         self.lin2.reset_parameters()
 
 
-    def forward(self, data,e,v):
-        #spec_losses = 0.
+    def forward(self, data):
         x, adj, mask = data.x, data.adj, data.mask
-        adj = ((adj + adj.transpose(1, 2)) > 0.).float()
+        fv = data['fv']
         spec_losses = 0.
         spec_losses_hard = 0.
-        entr_losses = 0.
+
 
         B, N, _ = adj.size()
         s_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+        s_soft_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
         s_inv_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
         s_inv_soft_final = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
-        ori_adj = adj
-        
+
         s = self.pool_block1(x, adj, mask, add_loop=True)
         x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
-        xs = [x.mean(dim=1)]
+        xs = [torch.sum(x, 1) / (mask.sum(-1, keepdims=True).to(x.dtype) + 1e-10)]
+
         diag_ele = torch.sum(adj, -1)
         Diag = torch.diag_embed(diag_ele)
         Lapl = Diag - adj
         Lapl_ori = Lapl
 
-        x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl, mask, is_training=self.training)
+        x, adj, L_next, L_next_soft, s, s_soft, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl, mask,
+                                                                                         is_training=self.training)
+
         s_final = torch.bmm(s_final, s)
+        s_soft_final = torch.bmm(s_soft_final, s_soft)
         s_inv_final = torch.bmm(s_inv, s_inv_final)
         s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
-        # multi layer implement
+
         for i, (embed_block, pool_block) in enumerate(
                 zip(self.embed_blocks, self.pool_blocks)):
             s = pool_block(x, adj, add_loop=True)
             x = F.relu(embed_block(x, adj, add_loop=True))
             xs.append(x.mean(dim=1))
             if i < len(self.embed_blocks):
-                x, adj, L_next, L_next_soft, s, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, L_next, L_next_soft, is_training=self.training)
+                x, adj, L_next, L_next_soft, s, s_soft, s_inv, s_inv_soft = dense_ssgpool_gumbel(x, adj, s, L_next,
+                                                                                                 L_next_soft,
+                                                                                                 is_training=self.training)
                 s_final = torch.bmm(s_final, s)
+                s_soft_final = torch.bmm(s_soft_final, s_soft)
                 s_inv_final = torch.bmm(s_inv, s_inv_final)
                 s_inv_soft_final = torch.bmm(s_inv_soft, s_inv_soft_final)
-                
-        x = F.relu(self.embed_final(x, adj, add_loop=True))
+
+        x = self.embed_final(x, adj, add_loop=True)
         xs.append(x.mean(dim=1))
+
+        # feature_out = x.mean(dim=1)
+
+        if self.lambda_ != 0.0:
+            spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final,
+                                                                     s_inv_soft_final, Lapl_ori, mask)
+        else:
+            spec_losses = 0.0
+        spec_losses += spec_loss
+
+
         x = self.jump(xs)
-        spec_loss, spec_loss_hard = get_Spectral_loss(e,v, Lapl_ori, L_next, s_inv_final.transpose(1,2), L_next_soft, s_inv_soft_final.transpose(1, 2), 1, mask)
-
-
-
-        spec_losses += spec_loss.mean()
-        spec_losses_hard += spec_loss_hard.mean()
-        entr_losses += torch.Tensor([0.]) #entr_loss.mean()
-
-        # pdb.set_trace()
+        ###x = F.relu(self.lin1(x))
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
-        return F.log_softmax(x, dim=-1), self.lambda_*(spec_losses)
+        return F.log_softmax(x, dim=-1), self.lambda_ * (spec_losses)
+
+
+
+
+
+
 
     def __repr__(self):
         return self.__class__.__name__

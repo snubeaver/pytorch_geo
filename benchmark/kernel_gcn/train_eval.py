@@ -6,6 +6,7 @@ from torch import tensor
 from torch.optim import Adam
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
+from datasets import MyDenseCollater, MyDenseDataLoader
 import torch_geometric.transforms as T
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -82,8 +83,12 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
     acc_mean = acc.mean().item()
     acc_std = acc.std().item()
     duration_mean = duration.mean().item()
-    print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-          format(loss_mean, acc_mean, acc_std, duration_mean))
+    if logger is not None:
+        logger.write('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}\n'.
+              format(loss_mean, acc_mean, acc_std, duration_mean))
+    else:
+        print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
+              format(loss_mean, acc_mean, acc_std, duration_mean))
 
     return loss_mean, acc_mean, acc_std
 
@@ -143,7 +148,7 @@ def train_diff(model, optimizer, loader):
         data = data.to(device)
         out, extra_loss = model(data)
         loss = F.nll_loss(out, data.y.view(-1))
-        loss += 1.0* extra_loss
+        loss += extra_loss
         loss.backward()
         total_loss += loss.item()  * num_graphs(data)
         optimizer.step()

@@ -30,10 +30,11 @@ class Block(torch.nn.Module):
 
 
 class DiffPool(torch.nn.Module):
-    def __init__(self, dataset, num_layers, hidden, ratio=0.25):
+    def __init__(self, dataset, num_layers, hidden, ratio=0.25, lambda_=0.0):
         super(DiffPool, self).__init__()
 
         num_nodes = ceil(ratio * dataset[0].num_nodes)
+        self.lambda_ = lambda_
         self.embed_block1 = Block(dataset.num_features, hidden, hidden)
         self.pool_block1 = Block(dataset.num_features, hidden, num_nodes)
 
@@ -56,8 +57,9 @@ class DiffPool(torch.nn.Module):
                                            self.pool_blocks):
             embed_block.reset_parameters()
             pool_block.reset_parameters()
-        self.jump.reset_parameters()
-        self.lin1.reset_parameters()
+        self.embed_final.reset_parameters()
+        ###self.jump.reset_parameters()
+        ###self.lin1.reset_parameters()
         self.lin2.reset_parameters()
 
     def forward(self, data):
@@ -66,7 +68,7 @@ class DiffPool(torch.nn.Module):
         ent_losses = 0.
         s = self.pool_block1(x, adj, mask, add_loop=True)
         x = F.relu(self.embed_block1(x, adj, mask, add_loop=True))
-        xs = [x.mean(dim=1)]
+        ###xs = [x.mean(dim=1)]
         x, adj, link_loss, ent_loss = dense_diff_pool(x, adj, s, mask)
         link_losses+=link_loss
         ent_losses+=ent_loss
@@ -87,7 +89,7 @@ class DiffPool(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
 
-        return F.log_softmax(x, dim=-1), link_losses+ent_losses
+        return F.log_softmax(x, dim=-1), self.lambda_*(link_losses+ent_losses)
 
     def __repr__(self):
         return self.__class__.__name__

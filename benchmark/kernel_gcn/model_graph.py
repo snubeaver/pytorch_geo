@@ -73,48 +73,8 @@ def arccosh(x):
     a = torch.sqrt(x*x-1)
     return torch.log(x+a)
 
-class SAGPooling(torch.nn.Module):
-
-    def __init__(self, in_channels, ratio=0.5, GNN=GraphConv, min_score=None,
-                 multiplier=1, nonlinearity=torch.tanh, **kwargs):
-        super(SAGPooling, self).__init__()
-
-        self.in_channels = in_channels
-        self.ratio = ratio
-        self.gnn = GNN(in_channels, 1, **kwargs)
-        self.min_score = min_score
-        self.multiplier = multiplier
-        self.nonlinearity = nonlinearity
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        self.gnn.reset_parameters()
 
 
-    def forward(self, x, edge_index, edge_attr=None, batch=None, attn=None):
-        """"""
-        if batch is None:
-            batch = edge_index.new_zeros(x.size(0))
-
-        attn = x if attn is None else attn
-        attn = attn.unsqueeze(-1) if attn.dim() == 1 else attn
-        score = self.gnn(attn, edge_index).view(-1)
-
-        if self.min_score is None:
-            score = self.nonlinearity(score)
-        else:
-            score = softmax(score, batch)
-
-        perm = topk(score, self.ratio, batch, self.min_score)
-        x = x[perm] * score[perm].view(-1, 1)
-        x = self.multiplier * x if self.multiplier != 1 else x
-
-        batch = batch[perm]
-        edge_index, edge_attr = filter_adj(edge_index, edge_attr, perm,
-                                           num_nodes=score.size(0))
-
-        return x, edge_index, edge_attr, batch, perm, score[perm]
 
 def dense_diff_pool(x, adj, s, mask=None):
     r"""Differentiable pooling operator from the `"Hierarchical Graph
@@ -202,251 +162,44 @@ def dense_diff_pool(x, adj, s, mask=None):
 
     return out, out_adj, link_loss.mean(), ent_loss.mean()
 
+def get_spectral_loss_mini_eigen(x, s, s_inv, s_soft, s_inv_soft, L, mask=None):
 
-def dense_ssgpool(x, adj, s, mask=None, debug=False):
-
-
-    x = x.unsqueeze(0) if x.dim() == 2 else x
-    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
-    s_in = s.unsqueeze(0) if s.dim() == 2 else s
-
-    batch_size, num_nodes, _ = x.size()
-
-    s = torch.softmax(s, dim=-1)
-
-    if mask is not None:
-        mask_ = mask.view(batch_size, num_nodes, 1).to(x.dtype)
-        x, s = x * mask_, s * mask_
-
-    diag_ele = torch.sum(adj, -1)
-    Diag = torch.diag_embed(diag_ele)
-    Lapl = Diag - adj
-    L_next = torch.matmul(torch.matmul(s.transpose(1, 2), Lapl), s)
-
-    identity = torch.eye(s.size(-1)).unsqueeze(0).expand(batch_size, s.size(-1), s.size(-1)).cuda()
-    padding = torch.zeros_like(identity)
-
-    A_next = -torch.where(torch.eq(identity, 1.), padding, L_next)
-
-    '''Get feature matrix of next layer'''
-
-    s_inv = s.transpose(1, 2) / ((s * s).sum(dim=1).unsqueeze(
-        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
-
-    #s_inv_T = P_inv.transpose(1, 2)
-
-    #x_next = torch.bmm(s_inv, x)
-    x_next = torch.bmm(s.transpose(1,2), x)
-    #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
-    #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
-
-    return x_next, A_next, Lapl, L_next, s, s_inv
-
-def dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl_soft, mask=None, is_training=False, debug=False):
-
-
-    x = x.unsqueeze(0) if x.dim() == 2 else x
-    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
-    s_in = s.unsqueeze(0) if s.dim() == 2 else s
-
-    batch_size, num_nodes, _ = x.size()
-
-    ###s = torch.softmax(s, dim=-1)
-    s, s_soft = gumbel_softmax(s_in, is_training=is_training)
-    if mask is not None:
-        mask_ = mask.view(batch_size, num_nodes, 1).to(x.dtype)
-        x, s = x * mask_, s * mask_
-
-    #diag_ele = torch.sum(adj, -1)
-    #Diag = torch.diag_embed(diag_ele)
-    #Lapl = Diag - adj
-    L_next = torch.matmul(torch.matmul(s.transpose(1, 2), Lapl), s)
-    L_next_soft = torch.matmul(torch.matmul(s_soft.transpose(1, 2), Lapl_soft), s_soft)
-    identity = torch.eye(s.size(-1)).unsqueeze(0).expand(batch_size, s.size(-1), s.size(-1)).cuda()
-    padding = torch.zeros_like(identity)
-
-    A_next = -torch.where(torch.eq(identity, 1.), padding, L_next)
-
-    '''Get feature matrix of next layer'''
-
-    s_inv_soft = s_soft.transpose(1, 2) / ((s_soft * s_soft).sum(dim=1).unsqueeze(
-        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
-    s_inv = s.transpose(1, 2) / ((s * s).sum(dim=1).unsqueeze(
-        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
-    #s_inv_T = P_inv.transpose(1, 2)
-
-    #x_next = torch.bmm(s_inv, x)
-    #x_next = torch.bmm(s.transpose(1, 2), x)
-    #x_next = torch.bmm(s_inv, x)
-    s_soft = s_soft / (s_soft.sum(1, keepdim=True) + 1e-10)
-    #s_soft = s_soft / ((s_soft*s_soft).sum(1, keepdim=True) + 1e-10)
-    x_next = torch.bmm(s_soft.transpose(1, 2), x)
-
-    #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
-    #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
-
-    #return x_next, A_next, L_next_soft, s_soft, s_inv
-    return x_next, A_next, L_next, L_next_soft, s, s_inv, s_inv_soft
-
-    ###return x_next, A_next, Lapl, L_next, s, s_inv
-
-
-
-def dense_ssgpool_gumbel_select(x, adj, a, next_num_nodes, mask=None, debug=False):
-
-
-    x = x.unsqueeze(0) if x.dim() == 2 else x
-    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
-    a = a.unsqueeze(0) if a.dim() == 2 else a
-
-    batch_size, num_nodes, dim = x.size()
-
-
-    next_num_nodes = next_num_nodes.unsqueeze(1).expand(batch_size, num_nodes)
-    seq_range = torch.arange(num_nodes).unsqueeze(0).expand(batch_size, num_nodes).cuda()
-    next_mask = seq_range < next_num_nodes
-
-    sorted_a, indices_a = torch.sort(a.squeeze(-1), dim=1, descending=True)
-
-    x_idx = indices_a.unsqueeze(-1).expand(batch_size, num_nodes, dim)
-    sorted_x = torch.gather(x, 1, x_idx)
-
-    s_in = torch.bmm(x, sorted_x.transpose(1, 2))
-
-    pad = torch.ones_like(s_in) * (-float("inf"))
-    next_mask_ = next_mask.unsqueeze(1).expand(batch_size, num_nodes, num_nodes)
-    s_in = torch.where(torch.eq(next_mask_, False), pad, s_in)
-
-    #s = torch.softmax(s_in, dim=1)
-
-
-
-
-
-
-    ###s = torch.softmax(s, dim=-1)
-    s = gumbel_softmax(s_in)
-    s_soft = gumbel_softmax(s_in, hard=False)
-    if mask is not None:
-        mask_ = mask.view(batch_size, num_nodes, 1).to(x.dtype)
-        x, s = x * mask_, s * mask_
-
-    diag_ele = torch.sum(adj, -1)
-    Diag = torch.diag_embed(diag_ele)
-    Lapl = Diag - adj
-    L_next = torch.matmul(torch.matmul(s.transpose(1, 2), Lapl), s)
-    L_next_soft = torch.matmul(torch.matmul(s_soft.transpose(1, 2), Lapl), s_soft)
-    identity = torch.eye(s.size(-1)).unsqueeze(0).expand(batch_size, s.size(-1), s.size(-1)).cuda()
-    padding = torch.zeros_like(identity)
-
-    A_next = -torch.where(torch.eq(identity, 1.), padding, L_next)
-
-    '''Get feature matrix of next layer'''
-
-    s_inv = s.transpose(1, 2) / ((s * s).sum(dim=1).unsqueeze(
-        -1) + EPS)  # Pseudo-inverse of P (easy inversion theorem, in this case, sum is same with 2-norm)
-
-    #s_inv_T = P_inv.transpose(1, 2)
-
-    x_next = torch.bmm(s_inv, x)
-    #x_next = torch.bmm(s.transpose(1, 2), x)
-    #identity = torch.eye(num_nodes).unsqueeze(0).expand(batch_size, num_nodes, num_nodes).cuda()
-    #link_loss = (adj + identity) - torch.matmul(s, s.transpose(1, 2))
-
-    return x_next, A_next, Lapl, L_next_soft, s_soft, s_inv, next_mask
-
-
-def get_Spectral_loss(e,v, L_1, L_2_hard, s_inv_hard, L_2, s_inv, num_loss=1, mask=None, debug=False):
-    """
-
-    :param L_1:
-    :param L_2:
-    :return:
-    """
-    #print("GET SPECTRAL LOSS")
-    #P_inv.register_hook(print)
-
-    B, N, _ = L_1.size()
-    #TODO: detach?
-
-
-    up_L_2 = torch.bmm(s_inv, L_2)
-    up_L_2 = torch.bmm(up_L_2, s_inv.transpose(1, 2))
-
-    up_L_2_hard = torch.bmm(s_inv_hard, L_2_hard)
-    up_L_2_hard = torch.bmm(up_L_2_hard, s_inv_hard.transpose(1, 2))
-
-    identity = torch.eye(N).unsqueeze(0).expand(B, N, N).cuda()
+    x = x.unsqueeze(-1)
+    x_tilde = torch.bmm(s, torch.bmm(s_inv, x))
+    x_tilde_soft = torch.bmm(s_soft, torch.bmm(s_inv_soft, x))
+    # x_tilde_soft = torch.bmm(s_soft, x)
     if mask is not None:
         mask_ = mask.unsqueeze(-1)
-        up_L_2 = up_L_2 * mask_
-        up_L_2 = up_L_2 * mask_.transpose(1, 2)
-        up_L_2_hard = up_L_2_hard * mask_
-        up_L_2_hard = up_L_2_hard * mask_.transpose(1, 2)
-        identity = identity * mask_
-        identity = identity * mask_.transpose(1,2)
+        x = x * mask_
+        x_tilde = x_tilde * mask_
+        x_tilde_soft = x_tilde_soft * mask_
+        # x_tilde_soft = x_tilde_soft * mask_
+    diff = x - x_tilde
+    diff_soft = x - x_tilde_soft
 
+    upper = torch.bmm(L, diff)
+    upper = torch.bmm(diff.transpose(1, 2), upper)
+    upper = torch.sqrt(torch.diagonal(upper, dim1=1, dim2=2) + 1e-10)
 
+    upper_soft = torch.bmm(L, diff_soft)
+    upper_soft = torch.bmm(diff_soft.transpose(1, 2), upper_soft)
+    upper_soft = torch.sqrt(torch.diagonal(upper_soft, dim1=1, dim2=2) + 1e-10)
 
-    # e, v = torch.symeig(L_1.cpu(), eigenvectors=True)
-    # e = e.cuda()
-    # v = v.cuda()
-    e  =e.cuda()
-    v = v.cuda()
+    lower = torch.bmm(L, x)
+    lower = torch.bmm(x.transpose(1, 2), lower)
+    lower = torch.sqrt(torch.diagonal(lower, dim1=1, dim2=2) + 1e-10)
 
-    up_L_2 = up_L_2 + identity*1e-4
-    up_L_2_hard = up_L_2_hard + identity * 1e-4
-    #e_temp, v_temp = torch.symeig(L2_temp.cpu(),eigenvectors=True)
+    term_mask = torch.zeros_like(upper)
+    upper = torch.where(upper < 0., term_mask, upper)
+    upper_soft = torch.where(upper_soft < 0., term_mask, upper_soft)
+    lower = torch.where(lower < 0., term_mask, lower)
 
-    e[e < 1e-4] = 0.  # ignore small value (to zero eivenvalue)
+    spec_loss = upper / (lower + 1e-10)
+    spec_loss_soft = upper_soft / (lower + 1e-10)
 
-    fiedler_idx = (e==0.).sum(dim=1)
-
-    fiedler_idx = fiedler_idx.unsqueeze(-1).expand(B, N).unsqueeze(-1)
-
-    fv = torch.gather(v, dim=2, index=fiedler_idx)  # .detach()
-    for i in range(num_loss-1):
-        fv_1 = torch.gather(v, dim=2, index=fiedler_idx + i+1)  # .detach()
-        fv = torch.cat((fv, fv_1), -1)
-
-    term_1 = (torch.bmm((L_1 - up_L_2), fv) * torch.bmm((L_1 - up_L_2), fv)).sum(1)  # Bxnum_loss
-    term_1_hard = (torch.bmm((L_1 - up_L_2_hard), fv) * torch.bmm((L_1 - up_L_2_hard), fv)).sum(1)  # Bxnum_loss
-    term_2 = (fv * fv).sum(1)  # Bxnum_loss
-    fv_L1 = torch.bmm(fv.transpose(1, 2), L_1)
-    term_3 = torch.diagonal(torch.bmm(fv_L1, fv), dim1=1, dim2=2)  # Bxnum_loss
-    fv_L2 = torch.bmm(fv.transpose(1, 2), up_L_2)
-    fv_L2_hard = torch.bmm(fv.transpose(1, 2), up_L_2_hard)
-    term_4 = torch.diagonal(torch.bmm(fv_L2, fv), dim1=1, dim2=2)  # Bxnum_loss
-    term_4_hard = torch.diagonal(torch.bmm(fv_L2_hard, fv), dim1=1, dim2=2)  # Bxnum_loss
-    term_5 = torch.bmm(L_1, fv)
-    term_6 = torch.bmm(up_L_2, fv)
-    term_7 = torch.diagonal(torch.bmm(term_5.transpose(1, 2), term_6), dim1=1, dim2=2)
-    term_8 = torch.sqrt((term_6 * term_6).sum(1) + 1e-10)
-
-    term_mask = torch.zeros_like(term_1)
-    term_1 = torch.where(term_1 < 0., term_mask, term_1)
-    term_1_hard = torch.where(term_1_hard < 0., term_mask, term_1_hard)
-    term_2 = torch.where(term_2 < 0., term_mask, term_2)
-    term_3 = torch.where(term_3 < 0., term_mask, term_3)
-    term_4 = torch.where(term_4 < 0., term_mask, term_4)
-    term_4_hard = torch.where(term_4_hard < 0., term_mask, term_4_hard)
-    term_7 = torch.where(term_7 < 0., term_mask, term_7)
-
-    spectral_loss = arccosh(1 + (term_1 * term_2) / (2 * term_3 * term_4 + EPS))
-    spectral_loss_hard = arccosh(1 + (term_1_hard * term_2) / (2 * term_3 * term_4_hard + EPS))
-    #spectral_loss = arccosh(1 + term_1 / (2 * term_7+EPS))
-    #spectral_loss = term_1 / (2 * term_3 * term_4 + EPS)
-    #spectral_loss = torch.bmm(term_5.transpose(1,2),term_6).squeeze(-1) / (term_7*term_8+EPS)
-    spectral_loss = spectral_loss.mean(-1)
-    spectral_loss_hard = spectral_loss_hard.mean(-1)
-    #spectral_loss = (1-spectral_loss).mean(-1)
-
-
-    #nanchecker = torch.isnan(spectral_loss)
-    #spectral_loss = torch.where(nanchecker, torch.zeros_like(spectral_loss), spectral_loss )
-    return spectral_loss, spectral_loss_hard
-
-
+    spec_loss = spec_loss.mean(-1)
+    spec_loss_soft = spec_loss_soft.mean(-1)
+    return spec_loss, spec_loss_soft
 
 def sample_gumbel(shape, eps=1e-10):
     """
