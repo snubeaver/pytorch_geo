@@ -31,15 +31,16 @@ layers = [1,2]
 # hiddens = [16, 32, 64, 128]
 # lambdas_ = [0.05, 0.1, 0.5]
 ratios = [0.1, 0.2, 0.4, 0.8]
-# ratios = [0.1]
+# ratios = [0.2,0.4, 0.8]
 hidden = 128
-datasets = ['MUTAG','DD']
+datasets = ['NCI1' ]
+# datasets = ['NCI1', 'NCI109','Mutagenicity', ]
 # datasets = [ 'ENZYMES','MUTAG','IMDB-BINARY','PROTEINS','REDDIT-BINARY',  'DD' ]
 nets = [
     # GCNWithJK,
-    DiffPool,
+    # DiffPool,
     # MincutPool,
-    # SAGPool,
+    SAGPool,
     # # SSGPool,
     # # GraphSAGEWithJK,
     # # GIN0WithJK,

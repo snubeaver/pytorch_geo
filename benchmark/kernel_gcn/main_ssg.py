@@ -25,7 +25,7 @@ parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--lr', type=float, default=0.01)
 parser.add_argument('--lr_decay_factor', type=float, default=0.5)
 parser.add_argument('--lr_decay_step_size', type=int, default=50)
-parser.add_argument('--datasets', type=str, default='MUTAG', help="['MUTAG','IMDB-BINARY', 'PROTEINS','ENZYMES', 'REDDIT-BINARY']")
+parser.add_argument('--datasets', type=str, default='IMDB-BINARY', help="['MUTAG','IMDB-BINARY', 'PROTEINS','ENZYMES', 'REDDIT-BINARY']")
 parser.add_argument('--ratio', type=float, default="0.1", help="[0.1, 0.2, 0.4, 0.8]")
 args = parser.parse_args()
 
@@ -39,24 +39,9 @@ lambdas_ = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
 hidden = 128
 #datasets = ['IMDB-BINARY', 'PROTEINS','ENZYMES', 'REDDIT-BINARY' ]  # , 'COLLAB']
 dataset_name = args.datasets
-Net = DiffPool # SSGPool #
+Net =  SSGPool #DiffPool #
 
-class Logger(object):
-    def __init__(self):
-        self.terminal = sys.stdout
-        self.log = open("/data/project/rw/kloud/graph_benchmark/results/"+dataset_name+"_"+Net.__name__+"_"+"200602.log", "a")
-        #/data/project/rw/kloud/graph_benchmark/results/
-    def write(self, message):
-        self.terminal.write(message)
-        self.log.write(message)
 
-    def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
-        pass
-
-con_logger = Logger()
 
 def logger(info):
     fold, epoch = info['fold'] + 1, info['epoch']
@@ -88,7 +73,7 @@ for num_layers, ratio  in product(layers, ratios):
         lr_decay_factor=args.lr_decay_factor,
         lr_decay_step_size=args.lr_decay_step_size,
         weight_decay=0,
-        logger=con_logger,
+        logger=logger,
         diff=diff,
     )
     if loss < best_result[0]:

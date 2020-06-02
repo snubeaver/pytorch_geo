@@ -93,7 +93,7 @@ class Net_inner(torch.nn.Module):
         # x_j = torch.index_select(x, 0, total_edge_index[0])
         # x_i = torch.index_select(x, 0, total_edge_index[1])
         # s1 = x_i-x_j
-        # 2 layer
+        # 2 layer5
         x = self.conv2(x, edge_index)
 
         x_j = torch.index_select(x, 0, total_edge_index[0])

@@ -24,11 +24,11 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
             val_dataset = dataset[val_idx[i]]
 
             if 'adj' in train_dataset[0]:
-                train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
+                train_loader = DenseLoader(train_dataset, batch_size, shuffle=True, num_workers=8)
                 val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
                 test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
             else:
-                train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
+                train_loader = DataLoader(train_dataset, batch_size, shuffle=True, num_workers=8)
                 val_loader = DataLoader(val_dataset, batch_size, shuffle=False)
                 test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
 
