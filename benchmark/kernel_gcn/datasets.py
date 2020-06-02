@@ -74,6 +74,7 @@ class MyDenseCollater(object):
             if key=='adj':
                 adjlist=[]
                 fvlist=[]
+                fv2list=[]
                 for d in data_list:
                     symadj = ((d[key] + d[key].T) > 0).to(torch.float)
                     D = symadj.sum(-1)
@@ -82,7 +83,7 @@ class MyDenseCollater(object):
                     e, v = torch.symeig(L, eigenvectors=True)
                     e[e < 1e-4] = 0.
                     fiedler_idx = (e == 0.).sum(dim=0)
-                    fv = v[:, fiedler_idx]
+                    fv = v[:, fiedler_idx:fiedler_idx+2]
                     adjlist.append(symadj)
                     fvlist.append(fv)
                 batch[key] = default_collate(adjlist)
@@ -123,6 +124,6 @@ class MyDenseDataLoader(torch.utils.data.DataLoader):
             reshuffled at every epoch (default: :obj:`False`)
     """
 
-    def __init__(self, dataset, batch_size=1, shuffle=False, collate_fn=DenseCollater(), **kwargs):
+    def __init__(self, dataset, batch_size=1, shuffle=False, collate_fn=DenseCollater(), num_workers=0, **kwargs):
         super(MyDenseDataLoader, self).__init__(
-            dataset, batch_size, shuffle, collate_fn=collate_fn, **kwargs)
+            dataset, batch_size, shuffle, collate_fn=collate_fn, num_workers=num_workers, **kwargs)

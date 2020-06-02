@@ -131,9 +131,9 @@ class SSGPool(nn.Module):
 
         # feature_out = x.mean(dim=1)
 
-        if self.lambda_ != 0.0 or x.requires_grad ==True:
+        if self.lambda_ != 0.0 and x.requires_grad ==True:
             fv = data['fv']
-            fv = fv.unsqueeze(0) if fv.dim() == 1 else fv
+            fv = fv.unsqueeze(0) if fv.dim() == 2 else fv
             spec_loss, spec_loss_soft = get_spectral_loss_mini_eigen(fv, s_final, s_inv_final, s_soft_final, s_inv_soft_final, Lapl_ori, mask)
             spec_losses += spec_loss
             #spec_losses += torch.Tensor([0.])

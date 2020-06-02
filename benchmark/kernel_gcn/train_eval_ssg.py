@@ -7,6 +7,7 @@ from torch.optim import Adam
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
 from datasets import MyDenseCollater, MyDenseDataLoader
+
 import torch_geometric.transforms as T
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -25,15 +26,20 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
     
     val_losses, accs, durations = [], [], []
     global_iter =1
+
+
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, folds))):
+        start_time = time.time()
         for i in range(global_iter):
             train_dataset = dataset[train_idx[i]]
             test_dataset = dataset[test_idx[i]]
             val_dataset = dataset[val_idx[i]]
 
             if 'adj' in train_dataset[0]:
-                train_loader = MyDenseDataLoader(train_dataset, batch_size, shuffle=True, collate_fn=MyDenseCollater())
-                #train_loader = DenseLoader(train_dataset, batch_size, shuffle=True)
+                #train_loader = MyDenseDataLoader(train_dataset, batch_size, shuffle=True, collate_fn=MyDenseCollater(), num_workers=8)
+                #val_loader = MyDenseDataLoader(val_dataset, batch_size, shuffle=False, num_workers=8)
+                #test_loader = MyDenseDataLoader(test_dataset, batch_size, shuffle=False, num_workers=8)
+                train_loader = DenseLoader(train_dataset, batch_size, shuffle=True, num_workers=8)
                 val_loader = DenseLoader(val_dataset, batch_size, shuffle=False)
                 test_loader = DenseLoader(test_dataset, batch_size, shuffle=False)
             else:
@@ -66,8 +72,8 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                     'test_acc': accs[-1],
                 }
 
-                if logger is not None:
-                    logger(eval_info)
+                #if logger is not None:
+                #    logger(eval_info)
 
                 if epoch % lr_decay_step_size == 0:
                     for param_group in optimizer.param_groups:
@@ -78,6 +84,8 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
 
             t_end = time.perf_counter()
             durations.append(t_end - t_start)
+        end_time=time.time()
+        print(end_time-start_time)
 
     loss, acc, duration = tensor(val_losses), tensor(accs), tensor(durations)
     loss, acc = loss.view(global_iter,folds, epochs), acc.view(global_iter,folds, epochs)
@@ -92,8 +100,12 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
     acc_mean = acc.mean().item()
     acc_std = acc.std().item()
     duration_mean = duration.mean().item()
-    print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-          format(loss_mean, acc_mean, acc_std, duration_mean))
+    if logger is not None:
+        logger.write('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}\n'.
+                     format(loss_mean, acc_mean, acc_std, duration_mean))
+    else:
+        print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
+              format(loss_mean, acc_mean, acc_std, duration_mean))
 
     return loss_mean, acc_mean, acc_std
 

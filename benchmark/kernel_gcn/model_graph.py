@@ -211,7 +211,7 @@ def dense_ssgpool_gumbel(x, adj, s, Lapl, Lapl_soft, mask=None, is_training=Fals
 
 def get_spectral_loss_mini_eigen(x, s, s_inv, s_soft, s_inv_soft, L, mask=None):
 
-    x = x.unsqueeze(-1)
+    #x = x.unsqueeze(-1)
     x_tilde = torch.bmm(s, torch.bmm(s_inv, x))
     x_tilde_soft = torch.bmm(s_soft, torch.bmm(s_inv_soft, x))
     # x_tilde_soft = torch.bmm(s_soft, x)
