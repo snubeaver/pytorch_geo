@@ -100,12 +100,9 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
     acc_mean = acc.mean().item()
     acc_std = acc.std().item()
     duration_mean = duration.mean().item()
-    if logger is not None:
-        logger.write('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}\n'.
-                     format(loss_mean, acc_mean, acc_std, duration_mean))
-    else:
-        print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
-              format(loss_mean, acc_mean, acc_std, duration_mean))
+    
+    print('Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}'.
+            format(loss_mean, acc_mean, acc_std, duration_mean))
 
     return loss_mean, acc_mean, acc_std
 

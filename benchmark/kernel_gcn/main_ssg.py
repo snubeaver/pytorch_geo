@@ -30,7 +30,7 @@ parser.add_argument('--ratio', type=float, default="0.1", help="[0.1, 0.2, 0.4, 
 args = parser.parse_args()
 
 layers = [1, 2]
-ratios = [0.1, 0.2, 0.4, 0.8]
+ratios = [0.2, 0.4, 0.8]
 # layers = [4]
 # hiddens = [16, 32, 64, 128]
 lambdas_ = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]

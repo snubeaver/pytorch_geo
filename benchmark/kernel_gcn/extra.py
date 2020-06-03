@@ -33,20 +33,20 @@ layers = [1,2]
 ratios = [0.1, 0.2, 0.4, 0.8]
 # ratios = [0.2,0.4, 0.8]
 hidden = 128
-datasets = ['NCI1' ]
+datasets = ['NCI1','NCI109','Mutagenicity' ]
 # datasets = ['NCI1', 'NCI109','Mutagenicity', ]
 # datasets = [ 'ENZYMES','MUTAG','IMDB-BINARY','PROTEINS','REDDIT-BINARY',  'DD' ]
 nets = [
     # GCNWithJK,
     # DiffPool,
     # MincutPool,
-    SAGPool,
+    # SAGPool,
     # # SSGPool,
     # # GraphSAGEWithJK,
     # # GIN0WithJK,
     # # GINWithJK,
     # # Graclus,
-    # TopK,
+    TopK,
     # 
     # EdgePool,
     # GCN,
