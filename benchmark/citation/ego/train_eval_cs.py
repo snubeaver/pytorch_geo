@@ -3,6 +3,7 @@ import random
 import time
 import pdb
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.utils import to_dense_adj
 from torch import tensor
@@ -17,10 +18,11 @@ from sklearn.metrics import roc_auc_score, precision_recall_fscore_support, conf
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 from train_eval import run_cs, run_
 from torch.utils.tensorboard import SummaryWriter
-
+from sklearn.metrics import roc_auc_score, f1_score
 import time
 from gae import GAE, InnerProductDecoder
 writer = SummaryWriter('runs/{}'.format(time.time()))
+
 
 def index_to_mask(index, size):
     mask = torch.zeros(size, dtype=torch.bool, device=index.device)
@@ -51,31 +53,40 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         data = data.to(device)
         num_nodes = data.num_nodes
         pivot= int(num_nodes*0.1)
-        cold_mask_node = range(k*pivot, (k+1)*pivot)
+        cold_mask_node = list(range(k*pivot, (k+1)*pivot))
+        unknown = data.unknown
+        for thing in unknown[0]:
+            if thing in cold_mask_node:
+                cold_mask_node.remove(thing) 
         data.test_masked_nodes = torch.tensor(cold_mask_node)
         train_node = range(num_nodes)
-        train_node = [e for e in train_node if e not in cold_mask_node]
-        data = test_edges(data, cold_mask_node)
+        train_node = [e for e in train_node if e not in cold_mask_node or unknown[0]]
         data.train_masked_nodes = torch.tensor(random.sample(train_node,140))
         epoch_num = int((num_nodes-pivot)/batch_size)
         print("{}-fold Result".format(k))
-        
-        data = train_edges(data, data.train_masked_nodes)
 
-        loss_wo, acc_wo = run_(data, dataset, data.train_edge_index, train_node)
+        loss_wo, acc_wo = run_(data, dataset, data.edge_index, train_node, writer)
+
+
+        data = test_edges(data, cold_mask_node)    
+        data = train_edges(data, data.train_masked_nodes)
+        # 
+        loss_wo, acc_wo = run_(data, dataset, data.train_edge_index, train_node, writer)
         losses_wo.append(loss_wo)
         accs_wo.append(acc_wo) 
-        scheduler = StepLR(optimizer, step_size=500, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=1000, gamma=0.5)
+        criterion = nn.BCEWithLogitsLoss(torch.ones(data.num_class).cuda())
+
         for epoch in range(2000):
             with torch.autograd.set_detect_anomaly(True):
                 train_loss =train_Z(model, optimizer, data,epoch)   
-        for epoch in range(5000):
+        for epoch in range(20000):
             with torch.autograd.set_detect_anomaly(True):
-                train_loss =train(model, optimizer,data,epoch)    
+                train_loss =train(model, optimizer,data,epoch, criterion)    
                 scheduler.step()
         if torch.cuda.is_available():
             torch.cuda.synchronize()
-        loss, acc = evaluate(model, data)
+        loss, acc = evaluate(model, data, criterion)
         losses.append(loss)
         accs.append(acc)
         print('Val Loss: {:.4f}, Test Accuracy: {:.3f}'.format(loss,acc))
@@ -97,7 +108,7 @@ def train_Z(model, optimizer, data, epoch):
     optimizer.zero_grad()
     pos_edge_index, neg_edge_index = data.train_pos_edge_index, data.train_neg_edge_index
 
-    out, z, n= model(data, pos_edge_index, neg_edge_index, data.train_edge_index,  data.train_masked_nodes)
+    out, z, n,_= model(data, pos_edge_index, neg_edge_index, data.train_edge_index,  data.train_masked_nodes)
     # pos_pred = decoder(z, pos_edge_index, sigmoid=True)
     # neg_pred = decoder(z, neg_edge_index, sigmoid=True)
     # total_pred = torch.cat([pos_pred, neg_pred], dim=-1)
@@ -112,37 +123,58 @@ def train_Z(model, optimizer, data, epoch):
     return link_loss
 
 
-def train(model, optimizer,data, epoch):
+def train(model, optimizer,data, epoch, criterion):
     pos_edge_index, neg_edge_index = data.train_pos_edge_index, data.train_neg_edge_index
 
-    logits, z, new_edge= model(data, pos_edge_index, neg_edge_index, data.train_edge_index, data.train_masked_nodes)
+    logits, z, out,r= model(data, pos_edge_index, neg_edge_index, data.train_edge_index, data.train_masked_nodes)
     # z= z_out[data.masked_nodes]
 
-    # link_loss = pre_loss(z, data.train_edge_index)    
+    link_loss = pre_loss(z, data.train_edge_index)    
     y_pred = index_to_mask(data.train_masked_nodes.clone().detach(), size=data.num_nodes)
     # pdb.set_trace()
-    loss = F.nll_loss(logits[y_pred], data.y[y_pred])
-    total_loss = loss #+ link_loss
+    loss = criterion(out[y_pred], data.y[y_pred])
+    total_loss = loss + 0.1*link_loss
     
     total_loss.backward()
     optimizer.step()
-    writer.add_scalar('training loss', loss.item(), epoch)
-    y_mask = index_to_mask(data.train_masked_nodes.clone().detach(), size=data.num_nodes)
-    pred = logits[y_mask].max(1)[1]
-    acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()
-    writer.add_scalar('acc', acc, epoch)
+    writer.add_scalar('cold/training loss', loss.item(), epoch)
+    y_mask = index_to_mask(data.test_masked_nodes.clone().detach(), size=data.num_nodes)
+    # pred = logits[y_mask].max(1)[1]
+    test_loss = criterion(out[y_mask], data.y[y_mask]).item()
+    writer.add_scalar('cold/val loss', test_loss, epoch)
+    writer.add_scalar('cold/edge_num', r, epoch)
+    # acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()
+    pred = torch.sigmoid(out[y_mask]).data > 0.5
+    pred = pred.detach().cpu().numpy()
+    target = data.y[y_mask].detach().cpu().numpy()
+    acc = f1_score(target, pred, average='micro')
+    writer.add_scalar('cold/acc', acc, epoch)
     return total_loss
 
 
-def evaluate(model, data):
+def evaluate(model, data, criterion):
     model.eval()
     pos_edge_index, neg_edge_index = data.test_pos_edge_index, data.test_neg_edge_index
     with torch.no_grad():
-        out,z , r =model(data, pos_edge_index, neg_edge_index.to(device), data.total_edge_index, data.test_masked_nodes)
+        logits, z, out,r=model(data, pos_edge_index, neg_edge_index.to(device), data.total_edge_index, data.test_masked_nodes)
     y_mask = index_to_mask(data.test_masked_nodes.clone().detach(), size=data.num_nodes)
-    loss = F.nll_loss(out[y_mask], data.y[y_mask]).item()
-    pred = out[y_mask].max(1)[1]
-    acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()
+    # loss = F.nll_loss(out[y_mask], data.y[y_mask]).item()
+    # pred = out[y_mask].max(1)[1]
+    # acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()
+
+    loss = criterion(out[y_mask], data.y[y_mask]).item()
+    # pred = logits[y_mask].max(1)[1]
+    pred = torch.sigmoid(out[y_mask]).data > 0.5
+    # acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()
+
+
+    pred = pred.detach().cpu().numpy()
+    target = data.y[y_mask].detach().cpu().numpy()
+    acc = f1_score(target, pred, average='micro')
+    pdb.set_trace()
+    # print((pred.eq(data.y[y_mask]).sum().item()))
+
+    # acc = (pred.eq(data.y[y_mask]).sum().item()) / (int(pred.size(0))*data.num_class.item())
 
     return loss, acc
 

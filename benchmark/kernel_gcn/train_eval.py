@@ -16,7 +16,7 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
                                   weight_decay, logger=None, diff=False):
     
     val_losses, accs, durations = [], [], []
-    global_iter =10
+    global_iter =1
     for fold, (train_idx, test_idx, val_idx) in enumerate(zip(*k_fold(dataset, folds))):
         for i in range(global_iter):
             train_dataset = dataset[train_idx[i]]
@@ -77,7 +77,7 @@ def cross_validation_with_val_set(dataset, model, folds, epochs, batch_size,
 
     loss, argmin = loss.min(dim=1)
     # pdb.set_trace
-    acc = acc[torch.arange(folds, dtype=torch.long), argmin]
+    acc = acc#[torch.arange(folds, dtype=torch.long), argmin]
 
     loss_mean = loss.mean().item()
     acc_mean = acc.mean().item()

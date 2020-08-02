@@ -45,7 +45,7 @@ def read_ego(files, name):
 
     nodeId.featnames : The names of each of the feature dimensions. Features are '1' if the user has this property in their profile, and '0' otherwise. This file has been anonymized for facebook users, since the names of the features would reveal private data.
     '''
-    for i in range(0, len(files), 5):
+    for i in range(5, len(files), 10):
         circles_file = files[i]
         edges_file = files[i + 1]
         egofeat_file = files[i + 2]
@@ -67,7 +67,6 @@ def read_ego(files, name):
         num_class = 0
         class_size=[]
         circle_list= []
-        pdb.set_trace()
         with open(circles_file, 'r') as f:
             for i, circle in enumerate(f.read().split('\n')[:-1]):
                 circle = [int(idx_assoc[int(c)]) for c in circle.split()[1:]]
@@ -75,11 +74,10 @@ def read_ego(files, name):
                 circle_list.append(circle)
                 num_class+=1
         
-        pdb.set_trace()
         class_size=np.array(class_size)
         index = np.argsort(class_size)
 
-        y_label = np.zeros(((int(x.size(0))+1), num_class+1))
+        y_label = np.zeros(((int(x.size(0))+1), num_class))
         # y_label = np.full((int(x.size(0))+1), num_class+1)
         circles = []
         circles_batch = []
@@ -90,9 +88,16 @@ def read_ego(files, name):
                 circle = circle_list[index[i]]
                 circles += circle
                 circles_batch += [i] * len(circle)
-                y_label[circle][i] = 1
-        pdb.set_trace()
+                for e in circle:
+                    y_label[e][i] = 1 
+        
+        unknown = list(np.where(y_label.sum(-1)==0)[0])
+        unknown.append(int(x.size(0)))
+        # pdb.set_trace()
+
+        # pdb.set_trace()
         y_label = torch.tensor(y_label)
+
         circle = torch.tensor(circles)
         circle_batch = torch.tensor(circles_batch)
         
@@ -132,7 +137,7 @@ def read_ego(files, name):
 
         ph = np.full((1), num_class)
         data = Data(x=x_all, edge_index=edge_index, circle=circle,
-                    circle_batch=circle_batch, y=y_label, num_class = num_class+2, num_feature = int(x.size(1)))
+                    circle_batch=circle_batch, y=y_label, num_class = num_class, num_feature = int(x.size(1)), unknown=unknown)
 
         data_list.append(data)
         break

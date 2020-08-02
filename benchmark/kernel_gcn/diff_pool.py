@@ -30,7 +30,7 @@ class Block(torch.nn.Module):
 
 
 class DiffPool(torch.nn.Module):
-    def __init__(self, dataset, num_layers, hidden, ratio=0.25, lambda_=0.0):
+    def __init__(self, dataset, num_layers, hidden, ratio=0.25, lambda_=0.1):
         super(DiffPool, self).__init__()
 
         num_nodes = ceil(ratio * dataset[0].num_nodes)
@@ -89,7 +89,7 @@ class DiffPool(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
 
-        return F.log_softmax(x, dim=-1), 0.0*(link_losses+ent_losses)
+        return F.log_softmax(x, dim=-1), (link_losses+ent_losses)
 
     def __repr__(self):
         return self.__class__.__name__

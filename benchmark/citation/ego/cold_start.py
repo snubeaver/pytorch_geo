@@ -34,12 +34,14 @@ class DoubleNet(torch.nn.Module):
         self.conv1_ssl = GCNConv(dataset.num_features, args.hidden)
         self.conv2_ssl = GCNConv(args.hidden, int(dataset[0].num_class))
 
+        self.lin = Linear(int(dataset[0].num_class),int(dataset[0].num_class))
 
     def reset_parameters(self):
         self.conv1.reset_parameters()
         self.conv2.reset_parameters()
         self.conv1_ssl.reset_parameters()
         self.conv2_ssl.reset_parameters()
+        self.lin.reset_parameters()
 
     def decoder(self, z, edge_index, sigmoid=True):
         value = (z[edge_index[0]] * z[edge_index[1]]).sum(dim=1)
@@ -62,8 +64,11 @@ class DoubleNet(torch.nn.Module):
         x = data.x
         x = F.relu(self.conv1_ssl(x, added_index)) # LAYER 1
         x = self.conv2_ssl(x, added_index)  # LAYER 2 
-        return F.log_softmax(x, dim=1), z,r.size()
-
+        # return self.lin(F.relu(x)), z,r.size()
+        out = self.lin(F.relu(x))
+        drop = torch.nn.Dropout(p=0.5)
+        return F.log_softmax(x, dim=1), z, out, r.size(-1)
+ 
 
 # ego-Facebook com-Amazon ego-gplus ego-twitter
 
@@ -71,17 +76,6 @@ class DoubleNet(torch.nn.Module):
 name = "ego-Facebook"
 path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', name)
 dataset = SNAPDataset(path, name)
-pdb.set_trace()
 run(dataset, DoubleNet(dataset, dataset[0].num_feature, int(dataset[0].num_class)), args.runs, args.epochs, args.lr, args.weight_decay,
         args.early_stopping)
 
-
-
-
-# names = ["CiteSeer", "PubMed"]
-# for name in names:
-#     dataset = get_planetoid_dataset(name, args.normalize_features)
-#     # dataset = dataset.shuffle()
-#     # pdb.set_trace()
-#     run(dataset, DoubleNet(dataset, dataset.num_features, dataset.num_classes), args.runs, args.epochs, args.lr, args.weight_decay,
-#         args.early_stopping)

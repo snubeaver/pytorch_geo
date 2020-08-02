@@ -1,7 +1,7 @@
 from __future__ import division
 
 import time
-
+import random
 import torch
 import torch.nn.functional as F
 from torch import tensor
@@ -20,27 +20,18 @@ def index_to_mask(index, size):
 def run_cs(data, dataset, edge_index_cs , train_node):
     model = Net(dataset)
     losses, accs = [], []
-    for epoch in range(0, 9):
-        data_ = data
-        data_.edge_index = edge_index_cs
-        model.to(device).reset_parameters()
-        optimizer = Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
-
-        t_size = int(len(train_node)/9)
-        data_.train_mask = train_node[epoch*t_size:(epoch+1)*t_size]
-        for i in range(200):
-            train(model, optimizer, data_)
-        
-
-
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        loss, acc = evaluate(model, data_)
-        losses.append(loss)
-        accs.append(acc)
-        print('Val Loss: {:.4f}, Test Accuracy: {:.3f}'.
-        format(loss,
-                acc))
+    model.to(device).reset_parameters()
+    optimizer = Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
+    for i in range(200):
+        train(model, optimizer, data, edge_index_cs)
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    loss, acc = evaluate(model, data, edge_index_cs)
+    losses.append(loss)
+    accs.append(acc)
+    print('Val Loss: {:.4f}, Test Accuracy: {:.3f}'.
+    format(loss,
+            acc))
     losses, accs = tensor(losses), tensor(accs)
     print('::::::Cold Edge::::::\n Mean Val Loss: {:.4f}, Mean Test Accuracy: {:.3f} ± {:.3f}'.
         format(losses.mean().item(),
@@ -48,52 +39,44 @@ def run_cs(data, dataset, edge_index_cs , train_node):
                 accs.std().item()
                 ))
 
-def run_(data, dataset, train_node, runs=10, lr=0.01, weight_decay=0.005):
+def run_(data, dataset,edge_index, train_node, runs=10, lr=0.01, weight_decay=0.005):
 
     model = Net(dataset)
     losses, accs = [], []
-    for epoch in range(0, 9):
-        model.to(device).reset_parameters()
-        optimizer = Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
-
-        t_size = int(len(train_node)/9)
-        data.train_mask = train_node[epoch*t_size:(epoch+1)*t_size]
-        for i in range(200):
-            train(model, optimizer, data)
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        loss, acc = evaluate(model, data)
-        losses.append(loss)
-        accs.append(acc)
-        print('Val Loss: {:.4f}, Test Accuracy: {:.3f}'.
-        format(loss,
-                acc))
-    losses, accs = tensor(losses), tensor(accs)
-    print('::::::No Edge::::::\n Val Loss: {:.4f}, Mean Test Accuracy: {:.3f} ± {:.3f}'.
-        format(losses.mean().item(),
-                accs.mean().item(),
-                accs.std().item()
-                ))
+    self_loop= torch.stack((torch.LongTensor(range(data.num_nodes)), torch.LongTensor(range(data.num_nodes))), dim=0).cuda()
+    # pdb.set_trace()
+    model.to(device).reset_parameters()
+    optimizer = Adam(model.parameters(), lr=0.01, weight_decay=0.0005)
+    for i in range(500):
+        # train(model, optimizer, data, self_loop)
+        train(model, optimizer, data, edge_index)
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    # loss, acc = evaluate(model, data, self_loop)
+    loss, acc = evaluate(model, data, edge_index)
+    print('w/o Val Loss: {:.4f}, Test Accuracy: {:.3f}'.
+    format(loss,
+            acc))
+    return loss, acc
 
 
-def train(model, optimizer, data):
+def train(model, optimizer, data, edge_index):
     model.train()
     optimizer.zero_grad()
-    out = model(data)
-    y_pred = index_to_mask(tensor(data.train_mask, device=out.device), size=data.num_nodes)
-
+    out = model(data, edge_index)
+    y_pred = index_to_mask(tensor(data.train_masked_nodes, device=out.device), size=data.num_nodes)
     loss = F.nll_loss(out[y_pred], data.y[y_pred])
     loss.backward()
     optimizer.step()
 
 
-def evaluate(model, data):
+def evaluate(model, data, edge_index):
     model.eval()
 
     with torch.no_grad():
-        logits = model(data)
+        logits = model(data, edge_index)
 
-    y_mask = index_to_mask(tensor(data.test_mask, device=logits.device), size=data.num_nodes)
+    y_mask = index_to_mask(tensor(data.test_masked_nodes, device=logits.device), size=data.num_nodes)
     loss = F.nll_loss(logits[y_mask], data.y[y_mask]).item()
     pred = logits[y_mask].max(1)[1]
     acc = pred.eq(data.y[y_mask]).sum().item() / y_mask.sum().item()

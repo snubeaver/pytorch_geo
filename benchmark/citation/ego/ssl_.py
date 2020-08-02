@@ -13,14 +13,17 @@ class Net(torch.nn.Module):
     def __init__(self, dataset):
         super(Net, self).__init__()
         self.conv1 = GCNConv(dataset.num_features, hidden)
-        self.conv2 = GCNConv(hidden, int(dataset[0].num_class))
+        # self.conv2 = GCNConv(hidden, int(dataset[0].num_class))
+        self.conv2 = GCNConv(dataset.num_features, int(dataset[0].num_class))
+        self.lin = Linear(int(dataset[0].num_class),int(dataset[0].num_class))
     def reset_parameters(self):
         self.conv1.reset_parameters()
         self.conv2.reset_parameters()
+        self.lin.reset_parameters()
 
     def forward(self, data, edge_index):
         x= data.x
-        x = F.relu(self.conv1(x, edge_index))
+        # x = F.relu(self.conv1(x, edge_index))
         x = self.conv2(x, edge_index)
-        return  F.log_softmax(x, dim=1)
+        return  self.lin(F.relu(x))
 

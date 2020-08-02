@@ -31,23 +31,24 @@ layers = [1,2]
 # hiddens = [16, 32, 64, 128]
 # lambdas_ = [0.05, 0.1, 0.5]
 ratios = [0.1, 0.2, 0.4, 0.8]
-# ratios = [0.2,0.4, 0.8]
+# ratios = [0.1]
 hidden = 128
-datasets = ['NCI1','NCI109','Mutagenicity' ]
+datasets = ['Mutagenicity']
 # datasets = ['NCI1', 'NCI109','Mutagenicity', ]
 # datasets = [ 'ENZYMES','MUTAG','IMDB-BINARY','PROTEINS','REDDIT-BINARY',  'DD' ]
 nets = [
     # GCNWithJK,
     # DiffPool,
     # MincutPool,
-    # SAGPool,
+    SAGPool,
     # # SSGPool,
     # # GraphSAGEWithJK,
     # # GIN0WithJK,
     # # GINWithJK,
     # # Graclus,
-    TopK,
+    # TopK,
     # 
+    # SortPool,
     # EdgePool,
     # GCN,
     # GraphSAGE,
@@ -55,7 +56,6 @@ nets = [
     # GIN,
     # GlobalAttentionNet,
     # Set2SetNet,
-    # SortPool,
 ]
 
 

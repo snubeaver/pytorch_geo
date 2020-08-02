@@ -7,7 +7,7 @@ from torch_geometric.nn import GCNConv, DeepGraphInfomax
 
 os.environ["CUDA_VISIBLE_DEVICES"]='1'
 
-dataset = 'Cora'
+dataset = 'Pubmed'
 path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', dataset)
 dataset = Planetoid(path, dataset)
 
@@ -55,8 +55,10 @@ def test():
     return acc
 
 
-for epoch in range(1, 301):
+
+print('Pubmed\n--------')
+for epoch in range(1, 401):
     loss = train()
-    print('Epoch: {:03d}, Loss: {:.4f}'.format(epoch, loss))
+    # print('Epoch: {:03d}, Loss: {:.4f}'.format(epoch, loss))
 acc = test()
 print('Accuracy: {:.4f}'.format(acc))
