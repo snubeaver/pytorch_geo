@@ -1,0 +1,23 @@
+Cora
+====
+Cold start
+0-fold Result
+Val Loss: 1.1243, Test Accuracy: 0.596
+1-fold Result
+Val Loss: 1.5076, Test Accuracy: 0.556
+2-fold Result
+Val Loss: 1.2235, Test Accuracy: 0.607
+3-fold Result
+Val Loss: 1.1753, Test Accuracy: 0.615
+4-fold Result
+Val Loss: 1.0365, Test Accuracy: 0.656
+5-fold Result
+Val Loss: 1.0781, Test Accuracy: 0.719
+6-fold Result
+Val Loss: 0.8946, Test Accuracy: 0.704
+7-fold Result
+Val Loss: 0.9507, Test Accuracy: 0.715
+8-fold Result
+Val Loss: 1.2074, Test Accuracy: 0.633
+9-fold Result
+Val Loss: 0.9414, Test Accuracy: 0.715

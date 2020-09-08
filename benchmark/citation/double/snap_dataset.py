@@ -31,7 +31,6 @@ def read_ego(files, name):
     all_featnames = sorted(list(set(all_featnames)))
     all_featnames = {key: i for i, key in enumerate(all_featnames)}
 
-
     data_list = []
     '''
     Files:
@@ -45,12 +44,14 @@ def read_ego(files, name):
 
     nodeId.featnames : The names of each of the feature dimensions. Features are '1' if the user has this property in their profile, and '0' otherwise. This file has been anonymized for facebook users, since the names of the features would reveal private data.
     '''
-    for i in range(0, len(files), 5):
+    for i in range(30, len(files), 5):
         circles_file = files[i]
         edges_file = files[i + 1]
         egofeat_file = files[i + 2]
         feat_file = files[i + 3]
         featnames_file = files[i + 4]
+
+        # pdb.set_trace()
 
         x = pandas.read_csv(feat_file, sep=' ', header=None, dtype=np.float64)
         x = torch.from_numpy(x.values)
@@ -73,10 +74,10 @@ def read_ego(files, name):
                 circle = [int(idx_assoc[int(c)]) for c in circle.split()[1:]]
                 circles += circle
                 circles_batch += [i] * len(circle)
-                y_label[circle] = i
-        unknown = list(np.where(y_label==num_class)[0])
+                # y_label[circle] = i
+        # unknown = list(np.where(y_label==num_class)[0])
         
-        y_label = torch.tensor(y_label)
+
         circle = torch.tensor(circles)
         circle_batch = torch.tensor(circles_batch)
         
@@ -92,6 +93,7 @@ def read_ego(files, name):
 
         x_ego = pandas.read_csv(egofeat_file, sep=' ', header=None,
                                 dtype=np.float32)
+        
         x_ego = torch.from_numpy(x_ego.values)
 
         row_ego = torch.full((x.size(0), ), x.size(0), dtype=torch.long)
@@ -109,14 +111,21 @@ def read_ego(files, name):
         with open(featnames_file, 'r') as f:
             featnames = f.read().split('\n')[:-1]
             featnames = [' '.join(x.split(' ')[1:]) for x in featnames]
+        y_label = x[:,30] #poltical status
+        featnames.remove('political;anonymized feature 1278')
+        pdb.set_trace()
         indices = [all_featnames[featname] for featname in featnames]
         x_all[:, torch.tensor(indices)] = x
+
+
+        y_label = torch.tensor(y_label)
+
 
         edge_index, _ = coalesce(edge_index, None, x.size(0), x.size(0))
 
         ph = np.full((1), num_class)
         data = Data(x=x_all, edge_index=edge_index, circle=circle,
-                    circle_batch=circle_batch, y=y_label, num_class = num_class+1, num_feature = int(x.size(1)), unknown=unknown)
+                    circle_batch=circle_batch, y=y_label, num_class = 2, num_feature = int(x.size(1)), unknown=unknown)
 
         data_list.append(data)
         break

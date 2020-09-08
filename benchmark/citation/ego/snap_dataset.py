@@ -45,7 +45,7 @@ def read_ego(files, name):
 
     nodeId.featnames : The names of each of the feature dimensions. Features are '1' if the user has this property in their profile, and '0' otherwise. This file has been anonymized for facebook users, since the names of the features would reveal private data.
     '''
-    for i in range(5, len(files), 10):
+    for i in range(0, len(files), 5):
         circles_file = files[i]
         edges_file = files[i + 1]
         egofeat_file = files[i + 2]

@@ -1,0 +1,81 @@
+Cora
+====
+Cold start
+0-fold Result
+[[514733 533660]
+ [   451    442]]
+Loss: 225863.9219,  Test AUC Score: 0.493,
+ precision: 0.9991, 0.0008,
+ recall: 0.4910, 0.4950,
+ fscore: 0.6584, 0.0017
+1-fold Result
+[[450837 487395]
+ [   516    314]]
+Loss: 254949.2344,  Test AUC Score: 0.429,
+ precision: 0.9989, 0.0006,
+ recall: 0.4805, 0.3783,
+ fscore: 0.6489, 0.0013
+2-fold Result
+[[429669 398513]
+ [   409    247]]
+Loss: 334124.5000,  Test AUC Score: 0.448,
+ precision: 0.9990, 0.0006,
+ recall: 0.5188, 0.3765,
+ fscore: 0.6830, 0.0012
+3-fold Result
+[[366277 351734]
+ [   373    230]]
+Loss: 382877.9688,  Test AUC Score: 0.446,
+ precision: 0.9990, 0.0007,
+ recall: 0.5101, 0.3814,
+ fscore: 0.6754, 0.0013
+4-fold Result
+[[300584 307297]
+ [   252    257]]
+Loss: 590208.5625,  Test AUC Score: 0.500,
+ precision: 0.9992, 0.0008,
+ recall: 0.4945, 0.5049,
+ fscore: 0.6616, 0.0017
+5-fold Result
+[[257731 240049]
+ [   208    178]]
+Loss: 597100.0000,  Test AUC Score: 0.489,
+ precision: 0.9992, 0.0007,
+ recall: 0.5178, 0.4611,
+ fscore: 0.6821, 0.0015
+6-fold Result
+[[212162 175515]
+ [   156    109]]
+Loss: 659302.5000,  Test AUC Score: 0.479,
+ precision: 0.9993, 0.0006,
+ recall: 0.5473, 0.4113,
+ fscore: 0.7072, 0.0012
+7-fold Result
+[[138184 139305]
+ [   114    115]]
+Loss: 859299.7500,  Test AUC Score: 0.500,
+ precision: 0.9992, 0.0008,
+ recall: 0.4980, 0.5022,
+ fscore: 0.6647, 0.0016
+8-fold Result
+[[78644 88728]
+ [   49    73]]
+Loss: 1106826.7500,  Test AUC Score: 0.534,
+ precision: 0.9994, 0.0008,
+ recall: 0.4699, 0.5984,
+ fscore: 0.6392, 0.0016
+9-fold Result
+[[28010 29202]
+ [   29    29]]
+Loss: 1379375.8750,  Test AUC Score: 0.495,
+ precision: 0.9990, 0.0010,
+ recall: 0.4896, 0.5000,
+ fscore: 0.6571, 0.0020
+
+===============
+
+Final Result
+Loss: 638992.8750,  Test AUC: 0.481 ± 0.032
+ precision: 0.9991, 0.0008,
+ recall: 0.5017, 0.4609,
+ fscore: 0.6677, 0.0015

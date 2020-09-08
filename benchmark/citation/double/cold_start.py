@@ -52,9 +52,12 @@ class DoubleNet(torch.nn.Module):
         
         total_edge_index = torch.cat([pos_edge_index, neg_edge_index], dim=-1)
 
-        pos_pred = self.decoder(z, pos_edge_index, sigmoid=True)
-        neg_pred = self.decoder(z, neg_edge_index, sigmoid=True)
-        total_pred = torch.cat([pos_pred, neg_pred], dim=-1)
+        x_j = torch.index_select(z, 0, total_edge_index[0])
+        x_i = torch.index_select(z, 0, total_edge_index[1])
+        total_pred = torch.sigmoid(torch.einsum("ef,ef->e", x_i, x_j))
+        # pos_pred = self.decoder(z, pos_edge_index, sigmoid=True)
+        # neg_pred = self.decoder(z, neg_edge_index, sigmoid=True)
+        # total_pred = torch.cat([pos_pred, neg_pred], dim=-1)
         r, c = total_edge_index[0][total_pred>0.5], total_edge_index[1][total_pred>0.5]
         new_index = torch.stack((torch.cat([r,c], dim= -1),(torch.cat([c,r], dim= -1))), dim=0 )
         added_index = torch.cat([edge_index, new_index], dim=-1)
@@ -77,11 +80,12 @@ class DoubleNet(torch.nn.Module):
 
 
 
+torch.manual_seed(12345)
 
-names = ["CiteSeer", "PubMed"]
+# names = ["Cora", "CiteSeer", "PubMed"]
+names = ["PubMed"]
 for name in names:
+    print("{}\n----\n".format(name))
     dataset = get_planetoid_dataset(name, args.normalize_features)
-    # dataset = dataset.shuffle()
-    # pdb.set_trace()
     run(dataset, DoubleNet(dataset, dataset.num_features, dataset.num_classes), args.runs, args.epochs, args.lr, args.weight_decay,
         args.early_stopping)

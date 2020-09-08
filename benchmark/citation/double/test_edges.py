@@ -3,24 +3,10 @@ import random
 import torch
 from torch_geometric.utils import to_undirected
 import pdb
+import numpy as np
 
 def test_edges(data, cold_mask_node, val_ratio=0.05, test_ratio=0.1):
-    r"""Splits the edges of a :obj:`torch_geometric.data.Data` object
-    into positive and negative train/val/test edges, and adds attributes of
-    `train_pos_edge_index`, `train_neg_adj_mask`, `val_pos_edge_index`,
-    `val_neg_edge_index`, `test_pos_edge_index`, and `test_neg_edge_index`
-    to :attr:`data`.
-
-    Args:
-        data (Data): The data object.
-        val_ratio (float, optional): The ratio of positive validation
-            edges. (default: :obj:`0.05`)
-        test_ratio (float, optional): The ratio of positive test
-            edges. (default: :obj:`0.1`)
-
-    :rtype: :class:`torch_geometric.data.Data`
-    """
-
+    
     assert 'batch' not in data  # No batch-mode.
     device = data.x.device
     num_nodes = data.num_nodes
@@ -38,64 +24,67 @@ def test_edges(data, cold_mask_node, val_ratio=0.05, test_ratio=0.1):
     data.cold_mask_node = cold_mask_node
 
     # Select validate nodes
+    max_degree = 0
     for ind, i in enumerate(cold_mask_node):
         r_index = (row==i ).nonzero()
         c_index = (col==i ).nonzero()
+        
         index = torch.unique(torch.cat((r_index,c_index), 0))
+        if(index.size(0)>max_degree): max_degree = index.size(0)
         if(ind==0):
             indice=index
         else:
-            indice = torch.cat((indice, index),0)
+            indice = torch.cat((indice, index),0)   
 
-    test_indice = indice.squeeze()
-    # print(test_indice.size())
+    test_indice = torch.unique(indice).squeeze()
+
     a_r, a_c = row[test_indice], col[test_indice]
+
     data.test_pos_edge_index = torch.stack([a_r, a_c], dim=0)
-    # print(data.test_pos_edge_index.size())
+    
+    
+    # Building edge mask for GNN input
     
     edge_mask = torch.Tensor(edge_row.size(0)).type(torch.bool).to(data.x.device)
-    # print(edge_mask.size())
     edge_mask[edge_mask<1] = True
-    # print(edge_mask.sum())
+
     edge_mask = edge_mask.scatter_(0, test_indice, False )
-    # print(edge_mask.sum())
-    # print(edge_row.s/=ize())
     edge_row = edge_row[edge_mask] 
     edge_col = edge_col[edge_mask]
-    # print(edge_row.size())
-    data.total_edge_index = torch.stack((edge_row, edge_col), dim=0 )
-    # print(data.total_edge_index.size())
-    # print(all_indice.size())
+    data.test_edge_index = torch.stack((edge_row, edge_col), dim=0 )
 
     # Negative edges.
     neg_adj_mask = torch.ones(num_nodes, num_nodes, dtype=torch.uint8)
     neg_adj_mask = neg_adj_mask.triu(diagonal=1).to(torch.bool)
     neg_adj_mask[row, col] = 0 #inverse adj made
 
-    neg_row, neg_col = neg_adj_mask.nonzero().t()
-
+    neg_row, neg_col = neg_adj_mask.nonzero().t().to(device)
     # test negative
 
     for ind, i in enumerate(cold_mask_node):
-        r_index = (row==i ).nonzero()
-        c_index = (col==i ).nonzero()
+        r_index = (neg_row==i ).nonzero()
+        c_index = (neg_col==i ).nonzero()
         index = torch.unique(torch.cat((r_index,c_index), 0))
         if(ind==0):
             indice=index
         else:
             indice = torch.cat((indice, index),0)
-    neg_test_indice = indice.squeeze()
+    
+    neg_test_indice = torch.unique(indice).squeeze()
 
-    # perm_test = random.sample(range(neg_test_indice.size(0)),
-    #                      test_indice.size(0))
+    if(test_indice.dim()==0):
+        indice_size = 1
+    else:
+        indice_size = test_indice.size(0)
 
-    # perm_test = torch.tensor(perm_test).to(torch.long)
-    # neg_a_r, neg_a_c = neg_row[perm_val], neg_col[perm_val]
-    # data.test_neg_edge_index = torch.stack([neg_a_r, neg_a_c], dim=0).to(device)
+    perm_test = random.sample(range(neg_test_indice.size(0)),
+                         indice_size)
 
-    neg_a_r, neg_a_c = neg_row[neg_test_indice], neg_col[neg_test_indice]
+    perm_test = torch.tensor(perm_test).to(torch.long).sort()[0]
+    neg_a_r, neg_a_c = neg_row[perm_test], neg_col[perm_test]
+
     data.test_neg_edge_index = torch.stack([neg_a_r, neg_a_c], dim=0).to(device)
+    data.test_edge_index = to_undirected(data.test_edge_index,cold_mask_node)
 
-    data.total_edge_index = to_undirected(data.total_edge_index,cold_mask_node)
-
+    
     return data
