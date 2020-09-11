@@ -2,11 +2,11 @@ import os
 import os.path as osp
 
 import torch
-import pandas
+import pandas, json
 import numpy as np
 from torch_sparse import coalesce
 from torch_geometric.data import Data, InMemoryDataset, download_url, \
-                                 extract_gz, extract_tar
+                                 extract_gz, extract_tar, extract_zip
 from torch_geometric.data.makedirs import makedirs
 import pdb
 
@@ -18,7 +18,61 @@ class EgoData(Data):
             return item.max().item() + 1 if item.numel() > 0 else 0
         else:
             return super(EgoData, self).__inc__(key, item)
+def read_deezer(files, name):
 
+    data_list=[]
+
+    # Feature Build
+    features = json.load(open(files[2]))
+    num_nodes = len(features)
+    x_ =[]
+    max_f=0
+    for i, e in enumerate(features):
+        ftt=features['{}'.format(i)]
+        x_.append(ftt)
+
+        if(len(ftt)>0):
+            max_t = max(ftt)
+        else:
+            max_t =0
+        if(max_t>max_f):
+            max_f = max_t
+    x = np.zeros((num_nodes, max_f+1), dtype=int)
+
+    for i in range(num_nodes):
+        for j in x_[i]:
+            x[i][j]=1
+
+    x= torch.tensor(x, dtype=torch.long)
+
+
+    # Label Build
+
+    y_label = pandas.read_csv(files[3], sep=' ', header=None)
+    y = np.zeros((num_nodes), dtype=int)
+    for i in range(num_nodes):
+        label = y_label[0][i+1]
+        y[i] = int(label[-1])
+    y_label = torch.tensor(y)
+
+
+    # Edge index Build
+    edge_index = pandas.read_csv(files[1], sep=' ', header=None)
+    edge = np.zeros((num_nodes, num_nodes), dtype=int)
+    row , col = [], []
+    for i in range(num_nodes):
+        label = edge_index[0][i+1]
+        a,b = label.split(',')
+        row.append(int(a))
+        col.append(int(b))
+    row = torch.tensor(row, dtype=torch.long)
+    col = torch.tensor(col, dtype=torch.long)
+    edge_index = torch.stack([row, col], dim=0)
+
+    data = Data(x=x, edge_index=edge_index, y=y_label, num_class = 2, num_feature = int(x.size(1)))
+    data_list.append(data)
+
+    return data_list
 def read_ego(files, name):
     all_featnames = []
     for i in range(4, len(files), 5):
@@ -181,6 +235,7 @@ class SNAPDataset(InMemoryDataset):
         'soc-slashdot0922': ['soc-Slashdot0902.txt.gz'],
         'wiki-vote': ['wiki-Vote.txt.gz'],
         'gemsec-facebook': ['gemsec-Facebook.txt.gz'],
+        'deezer-europe': ['deezer_europe.zip'],
     }
 
     def __init__(self, root, name, transform=None, pre_transform=None,
@@ -218,6 +273,8 @@ class SNAPDataset(InMemoryDataset):
                 extract_tar(path, self.raw_dir)
             elif name.endswith('.gz'):
                 extract_gz(path, self.raw_dir)
+            elif name.endswith('.zip'):
+                extract_zip(path, self.raw_dir)
             os.unlink(path)
 
     def process(self):
@@ -234,6 +291,8 @@ class SNAPDataset(InMemoryDataset):
             data_list = read_soc(raw_files, self.name[:4])
         elif self.name[:5] == 'wiki-':
             data_list = read_wiki(raw_files, self.name[5:])
+        elif self.name[:6] == 'deezer':
+            data_list = read_deezer(raw_files, self.name[:6])
         else:
             raise NotImplementedError
 

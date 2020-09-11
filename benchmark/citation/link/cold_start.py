@@ -30,7 +30,8 @@ class Net(torch.nn.Module):
     def __init__(self, dataset, num_features , num_classes):
         super(Net, self).__init__()
         self.conv1 = GCNConv(dataset.num_features, 128)
-        self.conv2 = GCNConv(128, 64)
+        self.conv2 = GCNConv(128, num_classes)
+
     def reset_parameters(self):
         self.conv1.reset_parameters()
         self.conv2.reset_parameters()
@@ -51,15 +52,24 @@ class Net(torch.nn.Module):
 # path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', name)
 # dataset = SNAPDataset(path, name)
 # dataset = dataset.shuffle()
-# # pdb.set_trace()
+# name = "{}\n------\n".format(str(dataset)[:-2])
+# print(name)
 # run(dataset, Net(dataset, dataset[0].num_feature, int(dataset[0].num_class)), args.runs, args.epochs, args.lr, args.weight_decay,
 #         args.early_stopping)
 
 
+# name = "deezer-europe"
+# path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', name)
+# dataset = SNAPDataset(path, name)
+# dataset = dataset.shuffle()
+# name = "{}\n------\n".format(str(dataset)[:-2])
+# print(name)
+# run(dataset, Net(dataset, dataset[0].num_feature, int(dataset[0].num_class)), args.runs, args.epochs, args.lr, args.weight_decay,
+#         args.early_stopping)
 
 
 # names = ["Cora", "CiteSeer", "PubMed"]
-names = ["CiteSeer"]
+names = ["Cora"]
 for name in names:
     dataset = get_planetoid_dataset(name, args.normalize_features)
     name = "{}\n------\n".format(str(dataset)[:-2])

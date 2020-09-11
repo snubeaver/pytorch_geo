@@ -27,17 +27,14 @@ district =0
 tt = time.time()
 def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         permute_masks=None, logger=None):
-    
-    batch_size = 30
-    losses, accs , losses_wo, accs_wo= [], [], [], []
 
 
     lr = 0.01
     perm = torch.randperm(dataset[0].num_nodes)
+    aucs, aucs_ssl =[], []
 
     # runs=1
     for k in range(runs):
-        aucs, aucs_ssl =[], []
         best_val_perf = test_perf = 0
 
         writer = SummaryWriter('runs/{}_{}'.format(k, tt))
@@ -74,8 +71,8 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         
 
         model.to(device).reset_parameters()
-        optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-        scheduler = StepLR(optimizer, step_size=100, gamma=0.7)
+        optimizer = Adam(model.parameters(), lr=0.0001, weight_decay=weight_decay)
+        scheduler = StepLR(optimizer, step_size=1000, gamma=0.5)
         loss_track =[float('inf')]*100
 
         # pdb.set_trace()
@@ -98,7 +95,7 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         model.to(device).reset_parameters()
         optimizer_2 = Adam(model.parameters(), lr=0.0001, weight_decay=weight_decay)
         loss_track =[float('inf')]*100
-        scheduler_2 = StepLR(optimizer_2, step_size=500, gamma=0.6)
+        scheduler_2 = StepLR(optimizer_2, step_size=1000, gamma=0.5)
         for epoch in range(7000):
             with torch.autograd.set_detect_anomaly(True):
                 train_loss, val_loss =train(model, optimizer_2,data,epoch, writer)
@@ -115,9 +112,9 @@ def run(dataset, model, runs, epochs, lr, weight_decay, early_stopping,
         
         aucs_ssl.append(auc_ssl)
     aucs, aucs_ssl = tensor(aucs), tensor(aucs_ssl)
-    print('AUC: {:.4f}'.
-        format(aucs.mean().item()))
-    print('AUC: {:.4f}'.format(aucs_ssl.mean().item()))
+    print('AUC: {:.4f} + {:.4f} '.
+        format(aucs.mean().item(), aucs.std().item()))
+    print('AUC_SSL: {:.4f} + {:.4f} '.format(aucs_ssl.mean().item(), aucs_ssl.std().item()))
 
 
 def train_Z(model, optimizer, data, epoch, writer):
@@ -155,7 +152,7 @@ def train(model, optimizer,data, epoch, writer):
     y_pred = index_to_mask(data.train_masked_nodes.clone().detach(), size=data.num_nodes)
     loss = F.nll_loss(logits[y_pred], data.y[y_pred])
     writer.add_scalar('ssl/loss', loss, epoch)
-    lamda=0.05
+    lamda=0.1
     total_loss = lamda*loss + link_loss
     
     total_loss.backward()
